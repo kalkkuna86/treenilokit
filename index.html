@@ -250,10 +250,59 @@ details summary::-webkit-details-marker{display:none;}
 .hcal-today{outline:2px solid var(--accent);outline-offset:1px;}
 .hcal-future{opacity:0.3;}
 .month-days{margin-top:0;}
+
+/* ── AUTH ── */
+.auth-screen{position:fixed;inset:0;background:var(--bg);z-index:2000;display:flex;align-items:flex-start;justify-content:center;padding:16px;overflow-y:auto;}
+.auth-box{background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:28px 20px 32px;width:100%;max-width:400px;margin-top:auto;margin-bottom:auto;}
+.auth-logo{font-family:'DM Mono',monospace;font-size:28px;color:var(--accent);text-align:center;margin-bottom:4px;}
+.auth-sub{font-size:13px;color:var(--text3);text-align:center;margin-bottom:28px;}
+.auth-title{font-size:18px;font-weight:600;margin-bottom:20px;}
+.auth-field{margin-bottom:12px;}
+.auth-error{background:rgba(255,82,82,0.1);border:1px solid rgba(255,82,82,0.3);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--red);margin-bottom:14px;display:none;}
+.auth-switch{text-align:center;font-size:13px;color:var(--text3);margin-top:16px;padding-bottom:8px;}
+.auth-switch button{background:none;border:none;color:var(--accent);cursor:pointer;font-size:13px;text-decoration:underline;}
+.auth-user-bar{background:var(--bg2);border-bottom:1px solid var(--border);padding:8px 16px;display:flex;align-items:center;justify-content:space-between;font-size:12px;color:var(--text3);}
+.auth-user-email{font-family:'DM Mono',monospace;font-size:11px;color:var(--text2);}
 </style>
 </head>
 <body>
-<div class="app">
+
+<!-- AUTH SCREEN -->
+<div id="auth-screen" class="auth-screen">
+  <div class="auth-box">
+    <div class="auth-logo">⚡</div>
+    <div class="auth-sub">Treenilokit</div>
+    <div class="auth-title" id="auth-title">Kirjaudu sisään</div>
+    <div class="auth-error" id="auth-error"></div>
+    <div class="auth-field">
+      <div class="label">Sähköposti</div>
+      <input type="email" id="auth-email" placeholder="sinä@email.com" autocomplete="email">
+    </div>
+    <div class="auth-field">
+      <div class="label">Salasana</div>
+      <input type="password" id="auth-password" placeholder="••••••••" autocomplete="current-password"
+        onkeydown="if(event.key==='Enter')authSubmit()">
+    </div>
+    <div class="auth-field" id="auth-password2-wrap" style="display:none;">
+      <div class="label">Salasana uudelleen</div>
+      <input type="password" id="auth-password2" placeholder="••••••••" autocomplete="new-password"
+        onkeydown="if(event.key==='Enter')authSubmit()">
+    </div>
+    <button class="btn btn-primary btn-full" onclick="authSubmit()" id="auth-btn">Kirjaudu</button>
+    <div class="auth-switch">
+      <span id="auth-switch-text">Ei tiliä?</span>
+      <button onclick="toggleAuthMode()" id="auth-switch-btn">Luo tili</button>
+    </div>
+  </div>
+</div>
+
+<!-- USER BAR (shown when logged in) -->
+<div id="user-bar" style="display:none;" class="auth-user-bar">
+  <span class="auth-user-email" id="user-email-display"></span>
+  <button class="btn btn-ghost btn-sm" style="padding:4px 10px;font-size:11px;" onclick="signOut()">Kirjaudu ulos</button>
+</div>
+
+<div class="app" id="main-app" style="display:none;flex-direction:column;">
 <div class="content" id="main-content">
 
 <!-- ══════════════════════════════════════════
@@ -495,6 +544,7 @@ create policy "public" on workouts for all using (true);
 
 <div class="toast" id="toast"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
 // ══════════════════════════════════════════════════════════
@@ -852,8 +902,7 @@ function saveSession(){
   saveUserSessions(user);
   loadAllData();
   showToast('Treeni tallennettu ✓','success');
-  // Try cloud sync
-  syncIfConfigured();
+  if(_currentUser) syncNow();
   currentSession=[];
   renderSessionList();
 }
@@ -1484,51 +1533,53 @@ function updateSyncStatus(status){
 }
 
 async function testSync(){
-  const cfg=getSbConfig();
+  if(!_SB){return;}
+  if(!_currentUser){showToast('Kirjaudu ensin','');return;}
   updateSyncStatus('pending');
+  const {data:{session}} = await _SB.auth.getSession();
+  if(!session){updateSyncStatus('err');showToast('Ei istuntoa','');return;}
+  const cfg=getSbConfig();
   try{
     const r=await fetch(cfg.url+'/rest/v1/workouts?limit=1',{
-      headers:{'apikey':cfg.key,'Authorization':'Bearer '+cfg.key}
+      headers:{'apikey':cfg.key,'Authorization':'Bearer '+session.access_token}
     });
     if(r.ok){updateSyncStatus('ok');showToast('Yhteys toimii ✓','success');}
-    else{
-      const t=await r.text();
-      console.error('Test sync error:',r.status,t);
-      updateSyncStatus('err');
-      showToast('Virhe: '+r.status,'');
-    }
-  }catch(e){
-    console.error('Test sync fetch error:',e);
-    updateSyncStatus('err');
-    showToast('Yhteysvirhe','');
-  }
+    else{updateSyncStatus('err');showToast('Virhe: '+r.status,'');}
+  }catch{updateSyncStatus('err');showToast('Yhteysvirhe','');}
 }
 
 async function syncNow(){
-  const cfg=getSbConfig();
-  if(!cfg.url||!cfg.key){showToast('Ei Supabase-yhteyttä','');return;}
+  if(!_SB){return;}
+  if(!_currentUser){showToast('Kirjaudu ensin','');return;}
   updateSyncStatus('pending');
   const user=getUserSessions();
-  if(!user.length){showToast('Ei omia kirjauksia synkronoitavaksi','');updateSyncStatus('ok');return;}
-  const payload={data:JSON.stringify(user)};
-  fetch(cfg.url+'/rest/v1/workouts',{
-    method:'POST',
-    headers:{'apikey':cfg.key,'Authorization':'Bearer '+cfg.key,'Content-Type':'application/json','Prefer':'return=minimal'},
-    body:JSON.stringify(payload)
-  }).then(r=>{
-    if(r.ok||r.status===201){
-      updateSyncStatus('ok');
-      showToast('Synkronoitu pilveen ✓','success');
-      localStorage.setItem('last_sync', new Date().toISOString());
-    } else {
-      r.text().then(t=>console.error('Sync error:',r.status,t));
-      updateSyncStatus('err');
-      showToast('Synk. epäonnistui: '+r.status,'');
-    }
-  }).catch(e=>{
-    console.error('Sync fetch error:',e);
-    updateSyncStatus('err');
-    showToast('Verkkovirhe','');
+  if(!user.length){showToast('Ei omia kirjauksia','');updateSyncStatus('ok');return;}
+  _SB.auth.getSession().then(({data:{session}})=>{
+    if(!session){updateSyncStatus('err');return;}
+    const token=session.access_token;
+    const cfg=getSbConfig();
+    // Delete old entries for this user first, then insert fresh
+    fetch(cfg.url+'/rest/v1/workouts?user_id=eq.'+_currentUser.id,{
+      method:'DELETE',
+      headers:{'apikey':cfg.key,'Authorization':'Bearer '+token}
+    }).then(()=>{
+      const payload={data:JSON.stringify(user),user_id:_currentUser.id};
+      return fetch(cfg.url+'/rest/v1/workouts',{
+        method:'POST',
+        headers:{'apikey':cfg.key,'Authorization':'Bearer '+token,'Content-Type':'application/json','Prefer':'return=minimal'},
+        body:JSON.stringify(payload)
+      });
+    }).then(r=>{
+      if(r.ok||r.status===201){
+        updateSyncStatus('ok');
+        showToast('Synkronoitu ✓','success');
+        localStorage.setItem('last_sync',new Date().toISOString());
+      } else {
+        r.text().then(t=>console.error('Sync error:',r.status,t));
+        updateSyncStatus('err');
+        showToast('Synk. epäonnistui: '+r.status,'');
+      }
+    }).catch(e=>{console.error(e);updateSyncStatus('err');showToast('Verkkovirhe','');});
   });
 }
 
@@ -1604,39 +1655,130 @@ function showToast(msg,type){
 // ══════════════════════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════════════════════
+
+// ══════════════════════════════════════════════════════════
+// AUTH & SUPABASE CLIENT
+// ══════════════════════════════════════════════════════════
+let _SB = null; // initialized in initAuth
+let _currentUser = null;
+let _authMode = 'login';
+
+function toggleAuthMode(){
+  _authMode = _authMode === 'login' ? 'signup' : 'login';
+  const s = _authMode === 'signup';
+  document.getElementById('auth-title').textContent = s ? 'Luo tili' : 'Kirjaudu sisään';
+  document.getElementById('auth-btn').textContent = s ? 'Luo tili' : 'Kirjaudu';
+  document.getElementById('auth-switch-text').textContent = s ? 'Onko sinulla jo tili?' : 'Ei tiliä?';
+  document.getElementById('auth-switch-btn').textContent = s ? 'Kirjaudu' : 'Luo tili';
+  document.getElementById('auth-password2-wrap').style.display = s ? 'block' : 'none';
+  document.getElementById('auth-error').style.display = 'none';
+}
+
+async function authSubmit(){
+  const email = document.getElementById('auth-email').value.trim();
+  const pw = document.getElementById('auth-password').value;
+  const errEl = document.getElementById('auth-error');
+  errEl.style.display = 'none';
+  if(!email||!pw){ errEl.textContent='Täytä kaikki kentät.'; errEl.style.display='block'; return; }
+  const btn = document.getElementById('auth-btn');
+  btn.textContent = '...'; btn.disabled = true;
+  try{
+    if(_authMode === 'signup'){
+      const pw2 = document.getElementById('auth-password2').value;
+      if(pw !== pw2){ errEl.textContent='Salasanat eivät täsmää.'; errEl.style.display='block'; return; }
+      if(pw.length < 6){ errEl.textContent='Salasana liian lyhyt (min. 6 merkkiä).'; errEl.style.display='block'; return; }
+      const {data,error} = await _SB.auth.signUp({email, password:pw});
+      if(error){ errEl.textContent=_authErr(error.message); errEl.style.display='block'; return; }
+      onAuthSuccess(data.user);
+    } else {
+      const {data,error} = await _SB.auth.signInWithPassword({email, password:pw});
+      if(error){ errEl.textContent=_authErr(error.message); errEl.style.display='block'; return; }
+      onAuthSuccess(data.user);
+    }
+  } finally {
+    btn.disabled = false;
+    btn.textContent = _authMode === 'signup' ? 'Luo tili' : 'Kirjaudu';
+  }
+}
+
+function _authErr(msg){
+  if(msg.includes('Invalid login')) return 'Väärä sähköposti tai salasana.';
+  if(msg.includes('Email not confirmed')) return 'Vahvista sähköpostisi ensin.';
+  if(msg.includes('User already registered')) return 'Tili on jo olemassa — kirjaudu sisään.';
+  if(msg.includes('Password should be')) return 'Salasana on liian lyhyt.';
+  return msg;
+}
+
+function onAuthSuccess(user){
+  _currentUser = user;
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('main-app').style.display = 'flex';
+  document.getElementById('main-app').style.flexDirection = 'column';
+  document.getElementById('user-bar').style.display = 'flex';
+  document.getElementById('user-email-display').textContent = user.email;
+  loadAllData();
+  renderSessionList();
+  setTimeout(loadFromCloud, 800);
+}
+
+async function signOut(){
+  await _SB.auth.signOut();
+  _currentUser = null;
+  document.getElementById('auth-screen').style.display = 'flex';
+  document.getElementById('main-app').style.display = 'none';
+  document.getElementById('user-bar').style.display = 'none';
+}
+
+async function initAuth(){
+  // Initialize Supabase client
+  if(typeof supabase === 'undefined'){
+    console.error('Supabase SDK failed to load');
+    // Show app without auth if SDK fails
+    document.getElementById('auth-screen').style.display='none';
+    document.getElementById('main-app').style.display='flex';
+    document.getElementById('main-app').style.flexDirection='column';
+    loadAllData(); renderSessionList();
+    return;
+  }
+  _SB = supabase.createClient('https://mgyqqvodjplwjopyghui.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1neXFxdm9kanBsd2pvcHlnaHVpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgwMjU3NjMsImV4cCI6MjA5MzYwMTc2M30.mWZKYWYSPLBgdXmT6m5zdBA6qI9VYBJHAw7DZFo5KmI');
+  const {data:{session}} = await _SB.auth.getSession();
+  if(session?.user){
+    onAuthSuccess(session.user);
+  }
+  _SB.auth.onAuthStateChange((event)=>{
+    if(event==='SIGNED_OUT') _currentUser = null;
+  });
+}
+
 initTheme();
-loadAllData();
-renderSessionList();
 initPWA();
+initAuth();
 
 function loadFromCloud(){
-  const cfg=getSbConfig();
-  if(!cfg.url||!cfg.key) return;
-  fetch(cfg.url+'/rest/v1/workouts?select=data,created_at&order=created_at.desc&limit=50',{
-    headers:{'apikey':cfg.key,'Authorization':'Bearer '+cfg.key}
-  }).then(r=>r.ok?r.json():null).then(rows=>{
-    if(!rows||!rows.length) return;
-    // Merge all cloud sessions into local
-    const allCloud=rows.flatMap(r=>{
-      try{return JSON.parse(r.data)}catch{return[]}
-    });
-    if(!allCloud.length) return;
-    // Merge with existing local, deduplicate by date+exercise+sets
-    const local=getUserSessions();
-    const key=s=>`${s.date}|${s.exercise}|${s.sets}`;
-    const localKeys=new Set(local.map(key));
-    const newOnes=allCloud.filter(s=>!localKeys.has(key(s)));
-    if(newOnes.length>0){
-      saveUserSessions([...local,...newOnes]);
-      loadAllData();
-      showToast('Ladattu '+newOnes.length+' kirjausta pilvestä ✓','success');
-    }
-    updateSyncStatus('ok');
-  }).catch(e=>console.log('Cloud load skipped:',e));
+  if(!_SB){return;}
+  if(!_currentUser) return;
+  _SB.auth.getSession().then(({data:{session}})=>{
+    if(!session) return;
+    const cfg=getSbConfig();
+    const token=session.access_token;
+    fetch(cfg.url+'/rest/v1/workouts?user_id=eq.'+_currentUser.id+'&select=data&order=created_at.desc&limit=1',{
+      headers:{'apikey':cfg.key,'Authorization':'Bearer '+token}
+    }).then(r=>r.ok?r.json():null).then(rows=>{
+      if(!rows||!rows.length) return;
+      try{
+        const cloud=JSON.parse(rows[0].data);
+        if(!cloud||!cloud.length) return;
+        // Replace local with cloud (cloud is source of truth)
+        saveUserSessions(cloud);
+        loadAllData();
+        showToast('Data ladattu pilvestä ✓','success');
+        updateSyncStatus('ok');
+      }catch(e){console.error('Cloud parse error:',e);}
+    }).catch(e=>console.log('Cloud load skipped:',e));
+  });
 }
 
 // Auto-sync from cloud on startup
-setTimeout(loadFromCloud, 1500);
 </script>
 </body>
 </html>
