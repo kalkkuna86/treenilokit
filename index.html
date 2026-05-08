@@ -702,7 +702,12 @@ function getUserSessions(){
 function saveUserSessions(arr){localStorage.setItem('treeni_v3',JSON.stringify(arr));}
 function loadAllData(){
   const user=getUserSessions();
-  allData=[...HISTORICAL,...user].sort((a,b)=>a.date.localeCompare(b.date));
+  // User entries override historical: if same date exists in user, skip that date from HISTORICAL
+  const userDates=new Set(user.map(e=>e.date));
+  const filteredHist=HISTORICAL.filter(e=>!userDates.has(e.date));
+  // Filter out deletion sentinels
+  const filteredUser=user.filter(e=>!e._deleted);
+  allData=[...filteredHist,...filteredUser].sort((a,b)=>a.date.localeCompare(b.date));
 }
 function getSbConfig(){
   return {
@@ -1304,7 +1309,20 @@ function updateSetDetail(i,j,field,val){
 function deleteEditEntry(i){
   if(!confirm("Poistetaanko tämä kirjaus?")) return;
   window._editEntries.splice(i,1);
-  if(window._editEntries.length===0){closeModal();return;}
+  if(window._editEntries.length===0){
+    // No entries left - save empty array for this date to override historical
+    const date=window._editDate;
+    const user=getUserSessions();
+    const rest=user.filter(e=>e.date!==date);
+    // Save a sentinel so loadAllData knows this date was cleared
+    saveUserSessions([...rest,{date:date,exercise:'__deleted__',sets:'',kg:null,rpe:null,_deleted:true}]);
+    loadAllData();
+    closeModal();
+    renderHistory();
+    if(_currentUser) syncNow();
+    showToast("Kirjaus poistettu ✓","success");
+    return;
+  }
   renderEditModal();
 }
 
@@ -1312,10 +1330,11 @@ function saveEdits(){
   const date=window._editDate;
   const updated=window._editEntries;
   const user=getUserSessions();
-  // Remove all user entries for this date, replace with edited versions
-  // This effectively "overrides" historical data for this date too
+  // Remove all user entries for this date
   const rest=user.filter(e=>e.date!==date);
-  const withDate=updated.map(e=>({...e,date}));
+  // Save ALL edited entries (including edited historical copies)
+  // loadAllData will skip HISTORICAL for this date since user has entries for it
+  const withDate=updated.map(e=>({...e,date:date}));
   saveUserSessions([...rest,...withDate]);
   loadAllData();
   closeModal();
