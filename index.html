@@ -438,20 +438,14 @@ details summary::-webkit-details-marker{display:none;}
     <div class="chart-legend">
       <span><span class="ldot" style="background:var(--accent)"></span>Paino</span>
       <span><span class="ldot" style="background:var(--purple)"></span>Est.1RM</span>
-      <span><span class="ldot" style="background:rgba(200,245,90,0.3);"></span>Ennuste</span>
+      <span><span class="ldot" style="background:var(--gold);width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:4px;"></span>PR</span>
     </div>
     <div class="chart-info" id="chart-info" style="margin-top:8px;"></div>
     <div id="e1rm-panel" style="display:none;"></div>
     <div id="forecast-panel" style="display:none;margin-top:8px;"></div>
   </div>
 
-  <!-- RPE vs weight -->
-  <div class="section-label">RPE vs. Paino</div>
-  <div class="card">
-    <div class="chart-tabs" id="rpe-tabs"></div>
-    <div class="chart-wrap-sm"><canvas id="rpe-chart"></canvas></div>
-    <div id="rpe-info" style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text3);margin-top:6px;"></div>
-  </div>
+
 
   <!-- Peaks / best lifts -->
   <div class="section-label">Huipputreenit</div>
@@ -596,16 +590,16 @@ const MUSCLE_MAP = {
   'Lähentäjät':      {pri:'pakarat',   sec:[]},
   'Prässi Sumo':     {pri:'pakarat',   sec:['etureidet','takareidet']},
   // RINTA
-  'Penkki':          {pri:'rinta',     sec:['ojentajat','etuhartia']},
-  'Kapea penkki':    {pri:'rinta',     sec:['ojentajat','etuhartia']},
+  'Penkki':          {pri:'rinta',     sec:['ojentajat','olkapaat']},
+  'Kapea penkki':    {pri:'rinta',     sec:['ojentajat','olkapaat']},
   'Kapea larssen press':{pri:'rinta',  sec:['ojentajat']},
   'Larssen press':   {pri:'rinta',     sec:['ojentajat']},
   'Spoto press kapea':{pri:'rinta',    sec:['ojentajat']},
   'Spoto Press kapea':{pri:'rinta',   sec:['ojentajat']},
-  'Vinopenkki':      {pri:'rinta',     sec:['ojentajat','etuhartia']},
-  'Vinopenkki kp':   {pri:'rinta',     sec:['ojentajat','etuhartia']},
+  'Vinopenkki':      {pri:'rinta',     sec:['ojentajat','olkapaat']},
+  'Vinopenkki kp':   {pri:'rinta',     sec:['ojentajat','olkapaat']},
   'Lattiapenkki':    {pri:'rinta',     sec:['ojentajat']},
-  'Dippi':           {pri:'rinta',     sec:['ojentajat','etuhartia']},
+  'Dippi':           {pri:'rinta',     sec:['ojentajat','olkapaat']},
   // SELKÄ (ylä)
   'Alatalja':        {pri:'yläselkä',  sec:['hauikset']},
   'T-soutu':         {pri:'yläselkä',  sec:['hauikset']},
@@ -621,18 +615,18 @@ const MUSCLE_MAP = {
   'Kylkipidot':      {pri:'alaselkä',  sec:[]},
   'Kylkipito':       {pri:'alaselkä',  sec:[]},
   // HARTIAT
-  'Pystypunnerrus':  {pri:'etuhartia', sec:['ojentajat']},
-  'Pystäri':         {pri:'etuhartia', sec:['ojentajat']},
-  'Vipunostot sivulle':{pri:'sivuhartia',sec:[]},
-  'Vipunostot':      {pri:'sivuhartia', sec:[]},
-  'Viparit':         {pri:'sivuhartia', sec:[]},
-  'Viparit talja':   {pri:'sivuhartia', sec:[]},
-  'Facepull':        {pri:'takahartia', sec:['yläselkä']},
-  'Takaolat':        {pri:'takahartia', sec:[]},
-  'Dumbell reverse flyes':{pri:'takahartia',sec:[]},
-  'Reverse dumbell flyes':{pri:'takahartia',sec:[]},
-  'Cuban press':     {pri:'takahartia', sec:['etuhartia']},
-  'Cuban cleans':    {pri:'takahartia', sec:[]},
+  'Pystypunnerrus':  {pri:'olkapaat', sec:['ojentajat']},
+  'Pystäri':         {pri:'olkapaat', sec:['ojentajat']},
+  'Vipunostot sivulle':{pri:'olkapaat',sec:[]},
+  'Vipunostot':      {pri:'olkapaat', sec:[]},
+  'Viparit':         {pri:'olkapaat', sec:[]},
+  'Viparit talja':   {pri:'olkapaat', sec:[]},
+  'Facepull':        {pri:'olkapaat', sec:['yläselkä']},
+  'Takaolat':        {pri:'olkapaat', sec:[]},
+  'Dumbell reverse flyes':{pri:'olkapaat',sec:[]},
+  'Reverse dumbell flyes':{pri:'olkapaat',sec:[]},
+  'Cuban press':     {pri:'olkapaat', sec:['olkapaat']},
+  'Cuban cleans':    {pri:'olkapaat', sec:[]},
   // HAUIKSET
   'Hauis':           {pri:'hauikset',  sec:[]},
   'Hauiskääntö':     {pri:'hauikset',  sec:[]},
@@ -672,14 +666,14 @@ function getMuscleInfo(exercise) {
   if(low.includes('mave')||low.includes('rdl')||low.includes('takareisi')||low.includes('reiden koukistus')) return {pri:'takareidet',sec:['alaselkä']};
   if(low.includes('penkki')||low.includes('dippi')) return {pri:'rinta',sec:['ojentajat']};
   if(low.includes('soutu')||low.includes('talja')||low.includes('leuanveto')) return {pri:'yläselkä',sec:['hauikset']};
-  if(low.includes('punnerrus')) return {pri:'etuhartia',sec:['ojentajat']};
+  if(low.includes('punnerrus')) return {pri:'olkapaat',sec:['ojentajat']};
   if(low.includes('hauis')||low.includes('kääntö')) return {pri:'hauikset',sec:[]};
   if(low.includes('ojentaja')||low.includes('triceps')||low.includes('ranskalainen')) return {pri:'ojentajat',sec:[]};
   if(low.includes('vatsat')||low.includes('vatsa')) return {pri:'vatsat',sec:[]};
   if(low.includes('pohje')||low.includes('pohkeet')) return {pri:'pohkeet',sec:[]};
   if(low.includes('pakara')||low.includes('lantio')) return {pri:'pakarat',sec:[]};
   if(low.includes('etureisi')||low.includes('reiden ojennus')) return {pri:'etureidet',sec:[]};
-  if(low.includes('vipar')||low.includes('sivuhartia')) return {pri:'sivuhartia',sec:[]};
+  if(low.includes('vipar')||low.includes('olkapaat')) return {pri:'olkapaat',sec:[]};
   return null;
 }
 function getMuscle(exercise) {
@@ -766,35 +760,46 @@ function detectWaves(){
   allData.forEach(d=>{
     const wn=weekNum(d.week);
     if(!wn) return;
-    if(!byWeek[wn]) byWeek[wn]={entries:[],vol:0,week:d.week};
+    if(!byWeek[wn]) byWeek[wn]={entries:[],vol:0,week:d.week,deload:false};
     byWeek[wn].entries.push(d);
     byWeek[wn].vol+=calcVol(d.sets,d.kg);
   });
   const weeks=Object.keys(byWeek).map(Number).sort((a,b)=>a-b);
-  const vols=weeks.map(w=>byWeek[w].vol);
+  const volMap={};weeks.forEach(w=>volMap[w]=byWeek[w].vol);
 
-  // Auto-detect low-volume weeks (potential deloads) using rolling context
-  const avg=vols.reduce((a,b)=>a+b,0)/vols.length;
-  const stdev=Math.sqrt(vols.map(v=>(v-avg)**2).reduce((a,b)=>a+b,0)/vols.length);
-  const lowThresh=avg-0.7*stdev;
+  // Initial split: gaps ≥4wk OR very obvious low (<12t followed by jump)
+  let rawWaves=[];let cur=[weeks[0]];
+  for(let i=1;i<weeks.length;i++){
+    const prev=weeks[i-1],curr=weeks[i];
+    const pv=volMap[prev],cv=volMap[curr];
+    const gap=curr-prev>=4;
+    const veryLow=pv<12000&&cv>pv;
+    if(gap||veryLow){rawWaves.push(cur);cur=[curr];}
+    else cur.push(curr);
+  }
+  rawWaves.push(cur);
 
-  weeks.forEach((wn,i)=>{
-    // Low vol AND lower than both neighbours = auto-deload
-    const v=byWeek[wn].vol;
-    const prevV=i>0?byWeek[weeks[i-1]].vol:v;
-    const nextV=i<weeks.length-1?byWeek[weeks[i+1]].vol:v;
-    byWeek[wn].autoDeload=(v<lowThresh && v<prevV && v<=nextV);
-    byWeek[wn].deload=byWeek[wn].autoDeload;
+  // Recursively split waves > 7 weeks at their natural valley
+  function splitWave(wlist,maxLen=7){
+    if(wlist.length<=maxLen) return[wlist];
+    const inner=wlist.slice(1,-1);
+    if(!inner.length) return[wlist];
+    const minWk=inner.reduce((a,b)=>volMap[a]<volMap[b]?a:b);
+    const mi=wlist.indexOf(minWk);
+    const left=wlist.slice(0,mi+1);
+    const right=wlist.slice(mi+1);
+    return[...splitWave(left,maxLen),...(right.length?splitWave(right,maxLen):[])];
+  }
+
+  const waves=rawWaves.flatMap(w=>splitWave(w,7));
+
+  // Mark deload: last week of each wave if vol < 60% of wave peak
+  waves.forEach(wave=>{
+    const peak=Math.max(...wave.map(w=>volMap[w]));
+    const last=wave[wave.length-1];
+    byWeek[last].deload=volMap[last]<peak*0.6&&wave.length>2;
   });
 
-  // Split into waves: new wave after deload or gap ≥4 weeks
-  const waves=[];let cur=[weeks[0]];
-  for(let i=1;i<weeks.length;i++){
-    const prev=weeks[i-1],w=weeks[i];
-    if(byWeek[prev].deload||w-prev>=4){waves.push(cur);cur=[w];}
-    else cur.push(w);
-  }
-  waves.push(cur);
   return{byWeek,waves,weeks};
 }
 
@@ -1126,7 +1131,7 @@ function renderHistory(){
             ${exs[0]?.week?`<span class="week-badge ${isDeload?'deload-badge':''}" style="margin-left:6px;">${exs[0].week}</span>`:''}
           </div>
           <div style="display:flex;gap:6px;align-items:center;">
-            ${hasUserEntries?`<button class="edit-btn" onclick="openEditModal('${date}')" style="padding:5px 10px;">✏ Muokkaa</button>`:''}
+            <button class="edit-btn" onclick="openEditModal('${date}')" style="padding:5px 10px;">✏ Muokkaa</button>
           </div>
         </div>
         <div class="card-sm">
@@ -1179,8 +1184,14 @@ function scrollToDate(ds){
 
 function openEditModal(date){
   const user=getUserSessions();
-  const entries=user.filter(e=>e.date===date);
-  if(!entries.length){showToast("Ei muokattavia kirjauksia","");return;}
+  const userEntries=user.filter(e=>e.date===date);
+  // For historical entries, create editable copies in user storage
+  const histEntries=HISTORICAL.filter(e=>e.date===date);
+  // Merge: user entries override historical
+  const userDates=new Set(userEntries.map(e=>e.exercise+'|'+e.sets));
+  const missingFromUser=histEntries.filter(e=>!userDates.has(e.exercise+'|'+e.sets));
+  const entries=[...userEntries,...missingFromUser];
+  if(!entries.length){showToast("Ei kirjauksia tälle päivälle","");return;}
   const modal=document.getElementById("edit-modal");
   const cont=document.getElementById("edit-modal-content");
 
@@ -1235,7 +1246,7 @@ function renderEditModal(){
           <select id="eedit-muscle-${i}" onchange="updateEditEntry(${i},'muscle',this.value)">
             <option value="">Auto</option>
             ${["etureidet","takareidet","pakarat","rinta","yläselkä","alaselkä",
-               "etuhartia","sivuhartia","takahartia","hauikset","ojentajat","vatsat","pohkeet"]
+               "olkapaat","olkapaat","olkapaat","hauikset","ojentajat","vatsat","pohkeet"]
               .map(m=>`<option value="${m}" ${e.muscle===m?"selected":""}>${m}</option>`).join("")}
           </select>
         </div>
@@ -1292,9 +1303,11 @@ function saveEdits(){
   const date=window._editDate;
   const updated=window._editEntries;
   const user=getUserSessions();
-  // Remove all entries for this date, replace with edited
+  // Remove all user entries for this date, replace with edited versions
+  // This effectively "overrides" historical data for this date too
   const rest=user.filter(e=>e.date!==date);
-  saveUserSessions([...rest,...updated]);
+  const withDate=updated.map(e=>({...e,date}));
+  saveUserSessions([...rest,...withDate]);
   loadAllData();
   closeModal();
   renderHistory();
@@ -1315,8 +1328,6 @@ function renderAnalysis(){
   renderFreqCalendar();
   renderLiftTabs();
   renderProgressChart(selectedLift);
-  renderRpeTabs();
-  renderRpeChart(selectedRpeLift);
   renderPeaks();
   renderWeeklySummary();
 }
@@ -1344,9 +1355,7 @@ function renderMuscleMap(){
     {id:"rinta",     label:"Rinta",       color:"#ff9840"},
     {id:"yläselkä",  label:"Yläselkä",   color:"#b48fff"},
     {id:"alaselkä",  label:"Alaselkä",   color:"#c084fc"},
-    {id:"etuhartia", label:"Etuhartia",   color:"#f472b6"},
-    {id:"sivuhartia",label:"Sivuhartia",  color:"#fb923c"},
-    {id:"takahartia",label:"Takahartia",  color:"#e879f9"},
+    {id:"olkapaat",  label:"Olkapäät",   color:"#fb923c"},
     {id:"hauikset",  label:"Hauikset",    color:"#34d399"},
     {id:"ojentajat", label:"Ojentajat",   color:"#f87171"},
     {id:"vatsat",    label:"Vatsat",      color:"#94a3b8"},
@@ -1492,31 +1501,9 @@ function renderProgressChart(lift){
   let maxKg=0,maxE1=0;
   const isPR=pts.map(p=>{const pr=p.e1rm>maxE1;if(p.kg>maxKg)maxKg=p.kg;if(p.e1rm>maxE1)maxE1=p.e1rm;return pr;});
 
-  // Forecast with linear regression on e1rm
-  const e1vals=pts.map(p=>p.e1rm).filter(Boolean);
-  const reg=linReg(e1vals);
-  const forecastSteps=[4,8,12];// weeks
-  const ptsPerWeek=pts.length/(Math.max(1,(new Date(pts[pts.length-1].date)-new Date(pts[0].date))/(7*864e5)));
-
-  // Extend chart with forecast points
-  const forecastLabels=[];const forecastVals=[];
-  const lastIdx=e1vals.length-1;
-  if(reg){
-    forecastSteps.forEach(wk=>{
-      const futureIdx=lastIdx+wk*ptsPerWeek;
-      const pred=+(reg.predict(futureIdx)).toFixed(1);
-      if(pred>0){
-        const futDate=new Date(pts[pts.length-1].date+'T12:00:00');
-        futDate.setDate(futDate.getDate()+wk*7);
-        forecastLabels.push(futDate.toISOString().slice(5,10)+'*');
-        forecastVals.push(pred);
-      }
-    });
-  }
-
-  const allLabels=[...pts.map(p=>p.date.slice(5)),...forecastLabels];
-  const kgData=[...pts.map(p=>p.kg),...forecastLabels.map(()=>null)];
-  const e1Data=[...pts.map(p=>p.e1rm),...forecastVals];
+  const allLabels=pts.map(p=>p.date.slice(5));
+  const kgData=pts.map(p=>p.kg);
+  const e1Data=pts.map(p=>p.e1rm);
 
   if(progressChart) progressChart.destroy();
   const ctx=document.getElementById('progress-chart').getContext('2d');
@@ -1530,10 +1517,9 @@ function renderProgressChart(lift){
           pointBackgroundColor:pts.map((_,i)=>isPR[i]?'#ffd166':'#c8f55a'),
           tension:0.3,fill:false,yAxisID:'y',spanGaps:false},
         {label:'Est.1RM',data:e1Data,borderColor:'#b48fff',backgroundColor:'rgba(180,143,255,0.06)',
-          borderWidth:2,borderDash:[...Array(pts.length).fill(0),...forecastVals.map(()=>4)].slice(0,1),
-          segment:{borderDash:ctx2=>ctx2.p0DataIndex>=pts.length-1?[4,3]:[]},
-          pointRadius:allLabels.map((_,i)=>i>=pts.length?4:isPR[i]?5:1),
-          pointBackgroundColor:allLabels.map((_,i)=>i>=pts.length?'rgba(180,143,255,0.5)':'#b48fff'),
+          borderWidth:2,
+          pointRadius:pts.map((_,i)=>isPR[i]?5:1),
+          pointBackgroundColor:'#b48fff',
           tension:0.3,fill:true,yAxisID:'y'},
       ]
     },
@@ -1559,6 +1545,9 @@ function renderProgressChart(lift){
       }
     }
   });
+
+  // Forecast
+  renderForecast(lift, pts);
 
   // Chart info
   const first=pts[0],last=pts[pts.length-1];
@@ -1593,6 +1582,69 @@ function renderProgressChart(lift){
       <div class="forecast-note">* Perustuu nykyiseen kehitysvauhtiin. Ei lupaus!</div>
     </div>`;
   }
+}
+
+function renderForecast(lift, pts){
+  const panel = document.getElementById('forecast-panel');
+  if(!pts||pts.length<6){panel.style.display='none';return;}
+
+  // Use only last 8 weeks of data for trend (more recent = more relevant)
+  const recent = pts.slice(-8);
+  const e1vals = recent.map(p=>p.e1rm).filter(Boolean);
+  if(e1vals.length < 4){panel.style.display='none';return;}
+
+  const reg = linReg(e1vals);
+  if(!reg){panel.style.display='none';return;}
+
+  // Weekly rate of change
+  const daySpan = (new Date(recent[recent.length-1].date) - new Date(recent[0].date))/(864e5);
+  const weeksSpan = Math.max(daySpan/7, 1);
+  const weeklyGain = (reg.slope * e1vals.length) / weeksSpan;
+
+  // Only show forecast if trend is positive and realistic (<2kg/week)
+  const currentE1 = e1vals[e1vals.length-1];
+  if(weeklyGain <= 0){
+    panel.style.display='block';
+    panel.innerHTML=`<div class="e1rm-card" style="border-color:rgba(255,152,64,0.3);">
+      <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text3);margin-bottom:6px;">KEHITYSSUUNTA</div>
+      <div style="font-size:13px;color:var(--orange);">Laskeva trendi viimeisessä 8 viikossa.</div>
+      <div style="font-size:11px;color:var(--text3);margin-top:4px;">Muutos: ${weeklyGain.toFixed(2)}kg/vko · Tarkista volyymi ja palautuminen.</div>
+    </div>`;
+    return;
+  }
+
+  const cappedGain = Math.min(weeklyGain, 1.5); // cap at 1.5kg/wk max realistic
+  const weeks4  = +(currentE1 + cappedGain*4).toFixed(1);
+  const weeks8  = +(currentE1 + cappedGain*8).toFixed(1);
+  const weeks12 = +(currentE1 + cappedGain*12).toFixed(1);
+
+  // Confidence: lower if data is noisy
+  const variance = e1vals.map(v=>(v-currentE1)**2).reduce((a,b)=>a+b)/e1vals.length;
+  const noise = Math.sqrt(variance);
+  const confidence = noise < 5 ? 'Korkea' : noise < 12 ? 'Kohtalainen' : 'Matala';
+  const confColor = noise < 5 ? 'var(--accent)' : noise < 12 ? 'var(--orange)' : 'var(--red)';
+
+  panel.style.display='block';
+  panel.innerHTML=`<div class="e1rm-card" style="border-color:rgba(200,245,90,0.2);">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text3);">KEHITYSENNUSTE</div>
+      <div style="font-size:10px;font-family:'DM Mono',monospace;color:${confColor};">Luotettavuus: ${confidence}</div>
+    </div>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:10px;">Perustuu viimeiseen ${recent.length} suoritukseen · ${weeklyGain.toFixed(2)}kg/vko kasvu</div>
+    <div class="forecast-line">
+      <span class="fc-when">+4 viikkoa</span>
+      <span class="fc-e1rm">~${weeks4}kg e1RM</span>
+    </div>
+    <div class="forecast-line">
+      <span class="fc-when">+8 viikkoa</span>
+      <span class="fc-e1rm">~${weeks8}kg e1RM</span>
+    </div>
+    <div class="forecast-line">
+      <span class="fc-when">+12 viikkoa</span>
+      <span class="fc-e1rm">~${weeks12}kg e1RM</span>
+    </div>
+    <div class="forecast-note">* Olettaa nykyisen kehitysvauhdin jatkuvan. Todellisuudessa kehitys hidastuu ajan myötä.</div>
+  </div>`;
 }
 
 function renderRpeTabs(){
@@ -1903,26 +1955,50 @@ async function authSubmit(){
   const email = document.getElementById('auth-email').value.trim();
   const pw = document.getElementById('auth-password').value;
   const errEl = document.getElementById('auth-error');
-  errEl.style.display = 'none';
-  if(!email||!pw){ errEl.textContent='Täytä kaikki kentät.'; errEl.style.display='block'; return; }
   const btn = document.getElementById('auth-btn');
-  btn.textContent = '...'; btn.disabled = true;
+
+  errEl.style.display = 'none';
+  if(!email||!pw){
+    errEl.textContent='Täytä sähköposti ja salasana.';
+    errEl.style.display='block';
+    return;
+  }
+  if(!_SB){
+    errEl.textContent='Yhteysongelma — lataa sivu uudelleen.';
+    errEl.style.display='block';
+    return;
+  }
+
+  btn.textContent='...'; btn.disabled=true;
+  let errMsg=null;
+
   try{
-    if(_authMode === 'signup'){
-      const pw2 = document.getElementById('auth-password2').value;
-      if(pw !== pw2){ errEl.textContent='Salasanat eivät täsmää.'; errEl.style.display='block'; return; }
-      if(pw.length < 6){ errEl.textContent='Salasana liian lyhyt (min. 6 merkkiä).'; errEl.style.display='block'; return; }
-      const {data,error} = await _SB.auth.signUp({email, password:pw});
-      if(error){ errEl.textContent=_authErr(error.message); errEl.style.display='block'; return; }
-      onAuthSuccess(data.user);
+    if(_authMode==='signup'){
+      const pw2=document.getElementById('auth-password2').value;
+      if(pw!==pw2){ errMsg='Salasanat eivät täsmää.'; }
+      else if(pw.length<6){ errMsg='Salasana liian lyhyt (min. 6 merkkiä).'; }
+      else{
+        const {data,error}=await _SB.auth.signUp({email,password:pw});
+        if(error) errMsg=_authErr(error.message);
+        else if(data?.user) onAuthSuccess(data.user);
+        else errMsg='Rekisteröinti epäonnistui — yritä uudelleen.';
+      }
     } else {
-      const {data,error} = await _SB.auth.signInWithPassword({email, password:pw});
-      if(error){ errEl.textContent=_authErr(error.message); errEl.style.display='block'; return; }
-      onAuthSuccess(data.user);
+      const {data,error}=await _SB.auth.signInWithPassword({email,password:pw});
+      if(error) errMsg=_authErr(error.message);
+      else if(data?.user) onAuthSuccess(data.user);
+      else errMsg='Kirjautuminen epäonnistui — yritä uudelleen.';
     }
-  } finally {
-    btn.disabled = false;
-    btn.textContent = _authMode === 'signup' ? 'Luo tili' : 'Kirjaudu';
+  } catch(e){
+    console.error('Auth error:', e);
+    errMsg='Verkkovirhe: '+e.message;
+  }
+
+  btn.disabled=false;
+  btn.textContent=_authMode==='signup'?'Luo tili':'Kirjaudu';
+  if(errMsg){
+    errEl.textContent=errMsg;
+    errEl.style.display='block';
   }
 }
 
@@ -1955,24 +2031,32 @@ async function signOut(){
 }
 
 async function initAuth(){
-  // Initialize Supabase client
-  if(typeof supabase === 'undefined'){
-    console.error('Supabase SDK failed to load');
-    // Show app without auth if SDK fails
+  // Initialize Supabase with timeout
+  if(typeof supabase==='undefined'){
+    console.error('Supabase SDK failed to load — running offline');
     document.getElementById('auth-screen').style.display='none';
     document.getElementById('main-app').style.display='flex';
     document.getElementById('main-app').style.flexDirection='column';
     loadAllData(); renderSessionList();
     return;
   }
-  _SB = supabase.createClient('https://mgyqqvodjplwjopyghui.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1neXFxdm9kanBsd2pvcHlnaHVpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgwMjU3NjMsImV4cCI6MjA5MzYwMTc2M30.mWZKYWYSPLBgdXmT6m5zdBA6qI9VYBJHAw7DZFo5KmI');
-  const {data:{session}} = await _SB.auth.getSession();
-  if(session?.user){
-    onAuthSuccess(session.user);
+  try{
+    _SB = supabase.createClient('https://mgyqqvodjplwjopyghui.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1neXFxdm9kanBsd2pvcHlnaHVpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgwMjU3NjMsImV4cCI6MjA5MzYwMTc2M30.mWZKYWYSPLBgdXmT6m5zdBA6qI9VYBJHAw7DZFo5KmI');
+    // Race: session check vs 8s timeout
+    const sessionPromise = _SB.auth.getSession();
+    const timeout = new Promise((_,reject)=>setTimeout(()=>reject(new Error('timeout')),8000));
+    const {data:{session}} = await Promise.race([sessionPromise, timeout]);
+    if(session?.user){
+      onAuthSuccess(session.user);
+    }
+    _SB.auth.onAuthStateChange((event)=>{
+      if(event==='SIGNED_OUT') _currentUser=null;
+    });
+  } catch(e){
+    console.error('initAuth error:', e);
+    // Still show auth screen so user can try
+    document.getElementById('auth-screen').style.display='flex';
   }
-  _SB.auth.onAuthStateChange((event)=>{
-    if(event==='SIGNED_OUT') _currentUser = null;
-  });
 }
 
 initTheme();
