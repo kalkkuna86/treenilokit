@@ -795,9 +795,10 @@ function detectWaves(){
 
   // Mark deload: last week of each wave if vol < 60% of wave peak
   waves.forEach(wave=>{
-    const peak=Math.max(...wave.map(w=>volMap[w]));
+    if(!wave||!wave.length) return;
+    const peak=Math.max(...wave.map(w=>volMap[w]||0));
     const last=wave[wave.length-1];
-    byWeek[last].deload=volMap[last]<peak*0.6&&wave.length>2;
+    if(byWeek[last]) byWeek[last].deload=(volMap[last]||0)<peak*0.6&&wave.length>2;
   });
 
   return{byWeek,waves,weeks};
@@ -1963,10 +1964,23 @@ async function authSubmit(){
     errEl.style.display='block';
     return;
   }
+  // If _SB not ready yet, try to init
   if(!_SB){
-    errEl.textContent='Yhteysongelma — lataa sivu uudelleen.';
-    errEl.style.display='block';
-    return;
+    if(typeof supabase!=='undefined'){
+      try{
+        const SB_URL='https://mgyqqvodjplwjopyghui.supabase.co';
+        const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1neXFxdm9kanBsd2pvcHlnaHVpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgwMjU3NjMsImV4cCI6MjA5MzYwMTc2M30.mWZKYWYSPLBgdXmT6m5zdBA6qI9VYBJHAw7DZFo5KmI';
+        _SB=supabase.createClient(SB_URL,SB_KEY);
+      }catch(e){
+        errEl.textContent='Yhteysongelma — lataa sivu uudelleen.';
+        errEl.style.display='block';
+        return;
+      }
+    } else {
+      errEl.textContent='Yhteysongelma — lataa sivu uudelleen.';
+      errEl.style.display='block';
+      return;
+    }
   }
 
   btn.textContent='...'; btn.disabled=true;
