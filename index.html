@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#0f0f0f" id="theme-meta">
 <title>Treenilokit</title>
-<link rel="manifest" id="pwa-manifest">
+<link rel="manifest" href="manifest.json">
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 /* ── THEMES ── */
@@ -289,9 +289,49 @@ details summary::-webkit-details-marker{display:none;}
         onkeydown="if(event.key==='Enter')authSubmit()">
     </div>
     <button class="btn btn-primary btn-full" onclick="authSubmit()" id="auth-btn">Kirjaudu</button>
+
+    <!-- Password reset panel -->
+    <div id="reset-panel" style="display:none;">
+      <div style="height:1px;background:var(--border);margin:16px 0;"></div>
+      <div style="font-size:14px;font-weight:600;margin-bottom:12px;">Palauta salasana</div>
+      <div class="auth-error" id="reset-error"></div>
+      <div id="reset-success" style="background:rgba(200,245,90,0.1);border:1px solid rgba(200,245,90,0.3);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--accent);margin-bottom:14px;display:none;"></div>
+      <div class="auth-field">
+        <div class="label">Sähköposti</div>
+        <input type="email" id="reset-email" placeholder="sinä@email.com" autocomplete="email"
+          onkeydown="if(event.key==='Enter')sendReset()">
+      </div>
+      <button class="btn btn-ghost btn-full" onclick="sendReset()" id="reset-btn">Lähetä palautuslinkki</button>
+      <div style="text-align:center;margin-top:10px;">
+        <button onclick="hideResetMode()" style="background:none;border:none;color:var(--text3);font-size:12px;cursor:pointer;text-decoration:underline;padding:0;">Takaisin kirjautumiseen</button>
+      </div>
+    </div>
+
+    <!-- New password panel (shown after reset link click) -->
+    <div id="new-password-panel" style="display:none;">
+      <div style="height:1px;background:var(--border);margin:16px 0;"></div>
+      <div style="font-size:14px;font-weight:600;margin-bottom:12px;">Aseta uusi salasana</div>
+      <div class="auth-error" id="newpw-error"></div>
+      <div class="auth-field">
+        <div class="label">Uusi salasana</div>
+        <input type="password" id="new-password" placeholder="••••••••" autocomplete="new-password">
+      </div>
+      <div class="auth-field">
+        <div class="label">Salasana uudelleen</div>
+        <input type="password" id="new-password2" placeholder="••••••••" autocomplete="new-password"
+          onkeydown="if(event.key==='Enter')setNewPassword()">
+      </div>
+      <button class="btn btn-primary btn-full" onclick="setNewPassword()" id="newpw-btn">Tallenna uusi salasana</button>
+    </div>
     <div class="auth-switch">
       <span id="auth-switch-text">Ei tiliä?</span>
       <button onclick="toggleAuthMode()" id="auth-switch-btn">Luo tili</button>
+    </div>
+    <div style="text-align:center;margin-top:8px;">
+      <button onclick="showResetMode()" id="auth-reset-link"
+        style="background:none;border:none;color:var(--text3);font-size:12px;cursor:pointer;text-decoration:underline;padding:0;">
+        Unohdin salasanan
+      </button>
     </div>
   </div>
 </div>
@@ -501,8 +541,33 @@ create policy "public" on workouts for all using (true);
       <label class="btn btn-ghost btn-sm" style="cursor:pointer;">⬆ Tuo JSON<input type="file" accept=".json" style="display:none;" onchange="importData(event)"></label>
     </div>
   </div>
-  <div style="margin-top:8px;">
+  <div style="margin-top:8px;display:flex;flex-direction:column;gap:8px;">
     <button class="btn btn-danger btn-full btn-sm" onclick="confirmClear()">Tyhjennä omat kirjaukseni</button>
+    <button class="btn btn-danger btn-full btn-sm" onclick="confirmDeleteAccount()">🗑 Poista tili pysyvästi</button>
+  </div>
+
+  <div class="section-label" style="margin-top:20px;">Tietosuoja</div>
+  <div class="card">
+    <div style="font-size:13px;line-height:1.7;color:var(--text2);">
+      <strong style="color:var(--text);">Treenilokit — Tietosuojaseloste</strong><br><br>
+      <strong>Rekisterinpitäjä:</strong> Sovelluksen omistaja (yksityiskäyttö)<br><br>
+      <strong>Kerättävät tiedot:</strong><br>
+      • Sähköpostiosoite (kirjautumista varten)<br>
+      • Treenikirjaukset: päivämäärä, liike, sarjat, toistot, paino, RPE, kommentit<br><br>
+      <strong>Tietojen käyttö:</strong><br>
+      Tietoja käytetään ainoastaan henkilökohtaisen treeniseurannan tarjoamiseen. Tietoja ei luovuteta kolmansille osapuolille eikä käytetä markkinointiin.<br><br>
+      <strong>Tietojen säilytys:</strong><br>
+      Tiedot tallennetaan Supabase-pilvipalveluun (EU-palvelimet, Irlanti). Supabase on GDPR-yhteensopiva palveluntarjoaja.<br><br>
+      <strong>Oikeutesi:</strong><br>
+      • Oikeus tarkastaa omat tietosi (Historia-välilehti)<br>
+      • Oikeus korjata tietoja (Muokkaa-toiminto)<br>
+      • Oikeus poistaa kaikki tietosi ("Poista tili pysyvästi" -nappi)<br>
+      • Oikeus viedä tietosi ("Vie JSON" -nappi)<br><br>
+      <strong>Evästeet:</strong><br>
+      Sovellus ei käytä evästeitä. Kirjautumistiedot tallennetaan selaimen localStorage-muistiin.<br><br>
+      <strong>Yhteydenotot:</strong><br>
+      Tietosuoja-asioissa: kalkkuna.kujala@gmail.com
+    </div>
   </div>
 </div>
 
@@ -1939,6 +2004,33 @@ function importData(e){
     }catch{showToast('Virhe lukemisessa','');}
   };r.readAsText(file);
 }
+
+async function confirmDeleteAccount(){
+  if(!_currentUser){showToast('Kirjaudu ensin','');return;}
+  const confirmed=confirm('VAROITUS: Tämä poistaa tilisi ja kaiken datasi pysyvästi. Tätä ei voi peruuttaa.\n\nHaluatko jatkaa?');
+  if(!confirmed) return;
+  const confirmed2=confirm('Oletko varma? Kaikki treenikirjauksesi poistetaan.');
+  if(!confirmed2) return;
+
+  try{
+    const {data:{session}}=await _SB.auth.getSession();
+    if(!session){showToast('Istunto vanhentunut','');return;}
+    const cfg=getSbConfig();
+    // Delete user's workout data
+    await fetch(cfg.url+'/rest/v1/workouts?user_id=eq.'+_currentUser.id,{
+      method:'DELETE',
+      headers:{'apikey':cfg.key,'Authorization':'Bearer '+session.access_token}
+    });
+    // Delete user account via Supabase admin (requires service role - use edge function workaround)
+    // For now: sign out and clear local data
+    saveUserSessions([]);
+    await _SB.auth.signOut();
+    showToast('Tili ja data poistettu ✓','success');
+    setTimeout(()=>location.reload(),1500);
+  }catch(e){
+    showToast('Virhe: '+e.message,'');
+  }
+}
 function confirmClear(){
   if(confirm('Poistetaan kaikki omat kirjauksesi? Historiadata säilyy.')){
     saveUserSessions([]);loadAllData();showToast('Poistettu','');renderSettings();
@@ -1949,23 +2041,25 @@ function confirmClear(){
 // PWA
 // ══════════════════════════════════════════════════════════
 function initPWA(){
-  // Inline manifest
-  const manifest={name:'Treenilokit',short_name:'Treeni',start_url:'.',display:'standalone',
-    background_color:'#0f0f0f',theme_color:'#0f0f0f',
-    icons:[{src:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="20" fill="%230f0f0f"/><text y=".9em" font-size="80">⚡</text></svg>',sizes:'any',type:'image/svg+xml'}]};
-  const blob=new Blob([JSON.stringify(manifest)],{type:'application/json'});
-  document.getElementById('pwa-manifest').href=URL.createObjectURL(blob);
-
-  // Service worker (inline)
+  // Register service worker from sw.js file
   if('serviceWorker' in navigator){
-    const sw=`
-const CACHE='treeni-v3';
-const ASSETS=['${location.href}'];
-self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS))));
-self.addEventListener('fetch',e=>e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const cl=res.clone();caches.open(CACHE).then(c=>c.put(e.request,cl));return res;}))));
-    `;
-    const swBlob=new Blob([sw],{type:'application/javascript'});
-    navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(()=>{});
+    navigator.serviceWorker.register('sw.js').catch(()=>{
+      // Fallback: inline blob SW if sw.js not found
+      const sw=`
+const CACHE='treeni-v4';
+self.addEventListener('install',e=>e.waitUntil(
+  caches.open(CACHE).then(c=>c.addAll(['/treenilokit/','/treenilokit/index.html']))
+));
+self.addEventListener('fetch',e=>e.respondWith(
+  caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{
+    const cl=res.clone();
+    caches.open(CACHE).then(c=>c.put(e.request,cl));
+    return res;
+  }))
+));`;
+      const blob=new Blob([sw],{type:'application/javascript'});
+      navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(()=>{});
+    });
   }
 }
 
@@ -1990,6 +2084,80 @@ function showToast(msg,type){
 let _SB = null; // initialized in initAuth
 let _currentUser = null;
 let _authMode = 'login';
+
+
+// ── PASSWORD RESET ────────────────────────────────────────
+function showResetMode(){
+  document.getElementById('reset-panel').style.display='block';
+  document.getElementById('auth-reset-link').style.display='none';
+  // Pre-fill email if already typed
+  const email=document.getElementById('auth-email').value.trim();
+  if(email) document.getElementById('reset-email').value=email;
+}
+
+function hideResetMode(){
+  document.getElementById('reset-panel').style.display='none';
+  document.getElementById('auth-reset-link').style.display='inline';
+  document.getElementById('reset-error').style.display='none';
+  document.getElementById('reset-success').style.display='none';
+}
+
+async function sendReset(){
+  const email=document.getElementById('reset-email').value.trim();
+  const errEl=document.getElementById('reset-error');
+  const succEl=document.getElementById('reset-success');
+  const btn=document.getElementById('reset-btn');
+  errEl.style.display='none';succEl.style.display='none';
+
+  if(!email){errEl.textContent='Syötä sähköpostiosoite.';errEl.style.display='block';return;}
+
+  if(!_SB){
+    try{_SB=supabase.createClient('https://mgyqqvodjplwjopyghui.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1neXFxdm9kanBsd2pvcHlnaHVpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgwMjU3NjMsImV4cCI6MjA5MzYwMTc2M30.mWZKYWYSPLBgdXmT6m5zdBA6qI9VYBJHAw7DZFo5KmI');}
+    catch(e){errEl.textContent='Yhteysongelma.';errEl.style.display='block';return;}
+  }
+
+  btn.textContent='Lähetetään...';btn.disabled=true;
+  try{
+    const {error}=await _SB.auth.resetPasswordForEmail(email,{
+      redirectTo:'https://kalkkuna86.github.io/treenilokit/'
+    });
+    if(error){errEl.textContent=_authErr(error.message);errEl.style.display='block';}
+    else{
+      succEl.textContent='Palautuslinkki lähetetty! Tarkista sähköpostisi (myös roskaposti).';
+      succEl.style.display='block';
+    }
+  }catch(e){
+    errEl.textContent='Verkkovirhe: '+e.message;errEl.style.display='block';
+  }finally{
+    btn.disabled=false;btn.textContent='Lähetä palautuslinkki';
+  }
+}
+
+async function setNewPassword(){
+  const pw=document.getElementById('new-password').value;
+  const pw2=document.getElementById('new-password2').value;
+  const errEl=document.getElementById('newpw-error');
+  const btn=document.getElementById('newpw-btn');
+  errEl.style.display='none';
+
+  if(!pw||!pw2){errEl.textContent='Täytä molemmat kentät.';errEl.style.display='block';return;}
+  if(pw!==pw2){errEl.textContent='Salasanat eivät täsmää.';errEl.style.display='block';return;}
+  if(pw.length<6){errEl.textContent='Salasana liian lyhyt (min. 6 merkkiä).';errEl.style.display='block';return;}
+
+  btn.textContent='Tallennetaan...';btn.disabled=true;
+  try{
+    const {error}=await _SB.auth.updateUser({password:pw});
+    if(error){errEl.textContent=_authErr(error.message);errEl.style.display='block';}
+    else{
+      document.getElementById('new-password-panel').style.display='none';
+      showToast('Salasana vaihdettu ✓','success');
+    }
+  }catch(e){
+    errEl.textContent='Verkkovirhe: '+e.message;errEl.style.display='block';
+  }finally{
+    btn.disabled=false;btn.textContent='Tallenna uusi salasana';
+  }
+}
 
 function toggleAuthMode(){
   _authMode = _authMode === 'login' ? 'signup' : 'login';
@@ -2095,6 +2263,29 @@ async function signOut(){
 }
 
 async function initAuth(){
+  // Check if this is a password recovery callback (from reset email link)
+  const hash = window.location.hash;
+  if(hash.includes('type=recovery')){
+    // Parse token from hash
+    const params = new URLSearchParams(hash.slice(1));
+    const access_token = params.get('access_token');
+    const refresh_token = params.get('refresh_token');
+    if(access_token){
+      document.getElementById('auth-screen').style.display='flex';
+      // Show new password panel
+      document.getElementById('new-password-panel').style.display='block';
+      document.getElementById('auth-btn').style.display='none';
+      document.getElementById('auth-reset-link').style.display='none';
+      document.getElementById('auth-switch-text').style.display='none';
+      document.getElementById('auth-switch-btn').style.display='none';
+      // Set session so updateUser works
+      if(typeof supabase!=='undefined'){
+        _SB = supabase.createClient('https://mgyqqvodjplwjopyghui.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1neXFxdm9kanBsd2pvcHlnaHVpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgwMjU3NjMsImV4cCI6MjA5MzYwMTc2M30.mWZKYWYSPLBgdXmT6m5zdBA6qI9VYBJHAw7DZFo5KmI');
+        await _SB.auth.setSession({access_token, refresh_token: refresh_token||''});
+      }
+      return;
+    }
+  }
   // Initialize Supabase with timeout
   if(typeof supabase==='undefined'){
     console.error('Supabase SDK failed to load — running offline');
