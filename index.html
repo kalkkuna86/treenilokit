@@ -347,13 +347,17 @@ details summary::-webkit-details-marker{display:none;}
           <div class="label">Lihasryhmä</div>
           <select id="ex-muscle">
             <option value="">Auto</option>
-            <option value="jalat">Jalat</option>
+            <option value="etureidet">Etureidet</option>
+            <option value="takareidet">Takareidet</option>
+            <option value="pakarat">Pakarat</option>
             <option value="rinta">Rinta</option>
-            <option value="selkä">Selkä</option>
-            <option value="hartiat">Hartiat</option>
+            <option value="yläselkä">Yläselkä</option>
+            <option value="alaselkä">Alaselkä</option>
+            <option value="olkapaat">Olkapäät</option>
             <option value="hauikset">Hauikset</option>
             <option value="ojentajat">Ojentajat</option>
             <option value="vatsat">Vatsat</option>
+            <option value="pohkeet">Pohkeet</option>
           </select>
         </div>
       </div>
@@ -1141,13 +1145,17 @@ function renderHistory(){
             const e1=ex.kg&&r?epley(ex.kg,r):null;
             const hasDetails=ex.setDetails&&ex.setDetails.length>1;
             return`<div class="session-block" style="margin-bottom:4px;">
-              <div class="session-ex-header" style="padding:5px 0;">
-                <span style="flex:1;font-size:13px;">${ex.exercise}</span>
-                ${ex.muscle?`<span class="tag to" style="font-size:9px;">${ex.muscle}</span>`:''}
-                ${ex.sets?`<span class="tag tg" style="font-size:10px;">${ex.sets}</span>`:''}
-                ${ex.rpe?`<span class="tag to" style="font-size:10px;">RPE${ex.rpe}</span>`:''}
-                ${ex.kg?`<span class="tag tb" style="font-size:10px;">${ex.kg}kg</span>`:''}
-                ${e1&&r>1?`<span class="tag tp" style="font-size:10px;">~${e1}</span>`:''}
+              <div style="padding:5px 0 3px 0;">
+                <div style="display:flex;align-items:center;gap:5px;margin-bottom:4px;">
+                  <span style="font-size:13px;font-weight:500;flex:1;">${ex.exercise}</span>
+                  ${ex.muscle?`<span class="tag to" style="font-size:9px;">${ex.muscle==='olkapaat'?'olkapäät':ex.muscle}</span>`:''}
+                </div>
+                <div style="display:flex;gap:5px;flex-wrap:wrap;padding-left:2px;">
+                  ${ex.sets?`<span class="tag tg" style="font-size:10px;">${ex.sets}</span>`:''}
+                  ${ex.kg?`<span class="tag tb" style="font-size:10px;">${ex.kg} kg</span>`:''}
+                  ${ex.rpe?`<span class="tag to" style="font-size:10px;">RPE ${ex.rpe}</span>`:''}
+                  ${e1&&r>1?`<span class="tag tp" style="font-size:10px;">~${e1} e1RM</span>`:''}
+                </div>
               </div>
               ${hasDetails?renderSetDetails(ex.setDetails):""}
               ${ex.note?`<div class="ex-note-text">${ex.note}</div>`:""}
@@ -1248,7 +1256,7 @@ function renderEditModal(){
             <option value="">Auto</option>
             ${["etureidet","takareidet","pakarat","rinta","yläselkä","alaselkä",
                "olkapaat","olkapaat","olkapaat","hauikset","ojentajat","vatsat","pohkeet"]
-              .map(m=>`<option value="${m}" ${e.muscle===m?"selected":""}>${m}</option>`).join("")}
+              .map(m=>`<option value="${m}" ${e.muscle===m?"selected":""}>${m==="olkapaat"?"olkapäät":m}</option>`).join("")}
           </select>
         </div>
       </div>
@@ -1324,11 +1332,11 @@ document.getElementById('edit-modal').addEventListener('click',e=>{if(e.target==
 // ══════════════════════════════════════════════════════════
 function renderAnalysis(){
   renderGlobalStats();
-  renderMuscleMap();
-  renderWaveViz();
-  renderFreqCalendar();
+  try{renderMuscleMap();}catch(e){console.warn('muscleMap:',e);}
+  try{renderWaveViz();}catch(e){console.warn('waveViz:',e);}
+  try{renderFreqCalendar();}catch(e){console.warn('freq:',e);}
   renderLiftTabs();
-  renderProgressChart(selectedLift);
+  try{renderProgressChart(selectedLift);}catch(e){console.warn('chart:',e);}
   renderPeaks();
   renderWeeklySummary();
 }
@@ -1571,17 +1579,7 @@ function renderProgressChart(lift){
 
   // Forecast panel
   if(reg&&forecastVals.length){
-    const fPanel=document.getElementById('forecast-panel');
-    fPanel.style.display='block';
-    fPanel.innerHTML=`<div class="e1rm-card" style="border-color:rgba(200,245,90,0.2);">
-      <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text3);margin-bottom:6px;">KEHITYSENNUSTE (lineaarinen)</div>
-      ${forecastSteps.slice(0,forecastVals.length).map((wk,i)=>`
-        <div class="forecast-line">
-          <span class="fc-when">+${wk} viikkoa</span>
-          <span class="fc-e1rm">e1RM ~${forecastVals[i]}kg</span>
-        </div>`).join('')}
-      <div class="forecast-note">* Perustuu nykyiseen kehitysvauhtiin. Ei lupaus!</div>
-    </div>`;
+    renderForecast(lift, pts);
   }
 }
 
@@ -1702,69 +1700,102 @@ function renderRpeChart(lift){
 
 function renderPeaks(){
   const el=document.getElementById('peaks-panel');
-  const lifts=MAIN_LIFTS;
-  let html='<div style="margin-bottom:10px;">';
-
-  lifts.forEach(lift=>{
-    const entries=allData.filter(d=>d.exercise===lift&&d.kg);
-    if(!entries.length) return;
-    const best=entries.reduce((b,e)=>e.kg>b.kg?e:b,entries[0]);
-    const{r}=parseSetReps(best.sets);
-    const e1=epley(best.kg,r);
-
-    // PR streak: consecutive weeks with new e1rm
-    const e1byDate=Object.entries(
-      entries.reduce((acc,e)=>{const{r}=parseSetReps(e.sets);const v=epley(e.kg,r);if(v&&(!acc[e.date]||v>acc[e.date]))acc[e.date]=v;return acc;},{})
-    ).sort((a,b)=>a[0].localeCompare(b[0]));
-    let streak=0,maxE1=0;
-    e1byDate.forEach(([,v])=>{if(v>maxE1){maxE1=v;streak++;}});
-
-    html+=`<div class="peak-item">
-      <div>
-        <div style="font-size:14px;font-weight:500;">${lift}</div>
-        <div class="peak-date">${best.date} · ${best.sets}</div>
-      </div>
-      <div style="text-align:right;">
-        <div class="peak-val">${best.kg}kg <span style="font-size:10px;color:var(--gold);">PR</span></div>
-        ${e1?`<div style="font-size:11px;color:var(--purple);font-family:'DM Mono',monospace;">e1RM ${e1}kg</div>`:''}
-        <div style="font-size:10px;color:var(--text3);">${streak} PR-suoritusp.</div>
-      </div>
-    </div>`;
-  });
-
-  // Best single week volume
-  const{byWeek,weeks}=detectWaves();
-  const bestWeek=weeks.reduce((b,w)=>byWeek[w].vol>byWeek[b].vol?w:b,weeks[0]);
-  const bwVol=(byWeek[bestWeek].vol/1000).toFixed(1);
-  html+=`<div class="peak-item">
-    <div><div style="font-size:14px;font-weight:500;">Korkein viikkovolyymi</div>
-      <div class="peak-date">${byWeek[bestWeek].week}</div></div>
-    <div class="peak-val">${bwVol}t</div>
-  </div>`;
-
-  html+='</div>';
-  el.innerHTML=html;
+  if(!el) return;
+  try{
+    let html='';
+    MAIN_LIFTS.forEach(lift=>{
+      const entries=allData.filter(d=>d.exercise===lift&&d.kg&&d.kg>0);
+      if(!entries.length) return;
+      // Best ever kg
+      const best=entries.reduce((b,e)=>e.kg>b.kg?e:b, entries[0]);
+      const{r}=parseSetReps(best.sets);
+      const e1=epley(best.kg,r);
+      // Count PR sessions
+      let maxE1=0, prCount=0;
+      const byDate={};
+      entries.forEach(e=>{
+        const{r:reps}=parseSetReps(e.sets);
+        const v=epley(e.kg,reps)||e.kg;
+        if(!byDate[e.date]||v>byDate[e.date]) byDate[e.date]=v;
+      });
+      Object.values(byDate).sort().forEach(v=>{if(v>maxE1){maxE1=v;prCount++;}});
+      html+=`<div class="peak-item">
+        <div>
+          <div style="font-size:14px;font-weight:500;">${lift}</div>
+          <div class="peak-date">${best.date} &middot; ${best.sets||''}</div>
+        </div>
+        <div style="text-align:right;">
+          <div class="peak-val">${best.kg}kg <span style="font-size:10px;color:var(--gold);">PR</span></div>
+          ${e1?`<div style="font-size:11px;color:var(--purple);font-family:'DM Mono',monospace;">e1RM ${e1}kg</div>`:''}
+          <div style="font-size:10px;color:var(--text3);">${prCount} PR-suoritusta</div>
+        </div>
+      </div>`;
+    });
+    // Best week
+    const wvols={};
+    allData.forEach(d=>{
+      const wn=weekNum(d.week);
+      if(!wn) return;
+      if(!wvols[wn]) wvols[wn]={vol:0,week:d.week};
+      wvols[wn].vol+=calcVol(d.sets,d.kg);
+    });
+    const wkeys=Object.keys(wvols).map(Number);
+    if(wkeys.length){
+      const bestWk=wkeys.reduce((b,w)=>wvols[w].vol>wvols[b].vol?w:b, wkeys[0]);
+      html+=`<div class="peak-item">
+        <div>
+          <div style="font-size:14px;font-weight:500;">Korkein viikkovolyymi</div>
+          <div class="peak-date">${wvols[bestWk].week}</div>
+        </div>
+        <div class="peak-val">${(wvols[bestWk].vol/1000).toFixed(1)}t</div>
+      </div>`;
+    }
+    el.innerHTML=html||'<div style="color:var(--text3);font-size:13px;">Ei dataa</div>';
+  }catch(e){
+    console.warn('renderPeaks error:',e);
+    el.innerHTML='<div style="color:var(--text3);font-size:13px;">Ladataan...</div>';
+  }
 }
 
 function renderWeeklySummary(){
-  const{byWeek,weeks}=detectWaves();
   const el=document.getElementById('weekly-summary');
-  el.innerHTML=weeks.slice(-8).reverse().map(wn=>{
-    const info=byWeek[wn];
-    const volK=(info.vol/1000).toFixed(1);
-    const days=new Set(info.entries.map(e=>e.date)).size;
-    const top=Object.entries(info.entries.filter(e=>e.kg).reduce((a,e)=>{if(!a[e.exercise]||e.kg>a[e.exercise])a[e.exercise]=e.kg;return a;},{})).sort((a,b)=>b[1]-a[1]).slice(0,4);
-    return`<div class="card" style="margin-bottom:8px;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-        <span style="font-family:'DM Mono',monospace;font-size:12px;color:var(--text2);">${info.week}</span>
-        <span style="font-size:11px;color:var(--text3);">${days}pv · ${info.entries.length} · ${volK}t</span>
-      </div>
-      ${top.length?`<table class="week-table"><tbody>${top.map(([ex,kg])=>`
-        <tr><td style="color:var(--text2);">${ex}</td>
-        <td style="text-align:right;font-family:'DM Mono',monospace;color:var(--accent);">${kg}kg</td></tr>`).join('')}</tbody></table>`
-      :'<span style="font-size:12px;color:var(--text3);">Ei kg-dataa</span>'}
-    </div>`;
-  }).join('');
+  if(!el) return;
+  try{
+    // Build week data directly without detectWaves
+    const wdata={};
+    allData.forEach(d=>{
+      const wn=weekNum(d.week);
+      if(!wn) return;
+      if(!wdata[wn]) wdata[wn]={vol:0,entries:[],week:d.week};
+      wdata[wn].entries.push(d);
+      wdata[wn].vol+=calcVol(d.sets,d.kg);
+    });
+    const wkeys=Object.keys(wdata).map(Number).sort((a,b)=>a-b);
+    if(!wkeys.length){el.innerHTML='';return;}
+    el.innerHTML=wkeys.slice(-8).reverse().map(wn=>{
+      const info=wdata[wn];
+      const volK=(info.vol/1000).toFixed(1);
+      const days=new Set(info.entries.map(e=>e.date)).size;
+      const kgMap={};
+      info.entries.forEach(e=>{if(e.kg){if(!kgMap[e.exercise]||e.kg>kgMap[e.exercise])kgMap[e.exercise]=e.kg;}});
+      const top=Object.entries(kgMap).sort((a,b)=>b[1]-a[1]).slice(0,4);
+      return`<div class="card" style="margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <span style="font-family:'DM Mono',monospace;font-size:12px;color:var(--text2);">${info.week}</span>
+          <span style="font-size:11px;color:var(--text3);">${days}pv · ${info.entries.length} sarjaa · ${volK}t</span>
+        </div>
+        ${top.length?`<table class="week-table"><tbody>${top.map(([ex,kg])=>`
+          <tr>
+            <td style="color:var(--text2);">${ex}</td>
+            <td style="text-align:right;font-family:'DM Mono',monospace;color:var(--accent);">${kg}kg</td>
+          </tr>`).join('')}</tbody></table>`
+        :'<span style="font-size:12px;color:var(--text3);">Ei kg-dataa</span>'}
+      </div>`;
+    }).join('');
+  }catch(e){
+    console.warn('renderWeeklySummary error:',e);
+    el.innerHTML='';
+  }
 }
 
 // ══════════════════════════════════════════════════════════
