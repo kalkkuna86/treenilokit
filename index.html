@@ -263,6 +263,27 @@ details summary::-webkit-details-marker{display:none;}
 .auth-switch button{background:none;border:none;color:var(--accent);cursor:pointer;font-size:13px;text-decoration:underline;}
 .auth-user-bar{background:var(--bg2);border-bottom:1px solid var(--border);padding:8px 16px;display:flex;align-items:center;justify-content:space-between;font-size:12px;color:var(--text3);}
 .auth-user-email{font-family:'DM Mono',monospace;font-size:11px;color:var(--text2);}
+
+/* ── BODY VIEW ── */
+.ratio-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);}
+.ratio-row:last-child{border-bottom:none;}
+.ratio-lift{font-size:13px;color:var(--text2);}
+.ratio-val{font-family:'DM Mono',monospace;font-size:14px;color:var(--accent);}
+.ratio-sub{font-size:10px;color:var(--text3);font-family:'DM Mono',monospace;}
+.wave-cmp-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.wave-cmp-card{background:var(--bg3);border-radius:10px;padding:12px;}
+.wave-cmp-title{font-family:'DM Mono',monospace;font-size:11px;color:var(--text3);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.08em;}
+.wave-cmp-stat{display:flex;justify-content:space-between;padding:4px 0;font-size:12px;border-bottom:1px solid var(--border);}
+.wave-cmp-stat:last-child{border-bottom:none;}
+.wave-cmp-val{font-family:'DM Mono',monospace;color:var(--text);}
+.video-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);}
+.video-item:last-child{border-bottom:none;}
+.video-thumb{width:64px;height:48px;border-radius:6px;background:var(--bg3);object-fit:cover;cursor:pointer;flex-shrink:0;}
+.video-info{flex:1;}
+.video-title-text{font-size:13px;font-weight:500;}
+.video-meta{font-size:11px;color:var(--text3);font-family:'DM Mono',monospace;margin-top:2px;}
+.prog-bar{height:4px;background:var(--bg3);border-radius:2px;overflow:hidden;}
+.prog-fill{height:100%;background:var(--accent);border-radius:2px;transition:width 0.3s;}
 </style>
 </head>
 <body>
@@ -500,6 +521,92 @@ details summary::-webkit-details-marker{display:none;}
   <div id="weekly-summary"></div>
 </div>
 
+
+<!-- ══════════════════════════════════════════
+     VIEW: BODY (kehonpaino + videot + aaltovertailu)
+══════════════════════════════════════════ -->
+<div class="view" id="view-body">
+
+  <!-- Kehonpaino -->
+  <div class="section-label">Kehonpaino</div>
+  <div class="card" style="margin-bottom:12px;">
+    <div class="row2" style="margin-bottom:10px;">
+      <div>
+        <div class="label">Päivämäärä</div>
+        <input type="date" id="bw-date" style="font-family:'DM Mono',monospace;font-size:13px;">
+      </div>
+      <div>
+        <div class="label">Paino (kg)</div>
+        <input type="number" id="bw-weight" placeholder="80.5" step="0.1" min="30" max="300">
+      </div>
+    </div>
+    <button class="btn btn-primary btn-full" onclick="saveBodyWeight()">+ Lisää paino</button>
+  </div>
+
+  <div class="card" style="margin-bottom:12px;">
+    <div class="chart-tabs" id="bw-range-tabs">
+      <span class="chart-tab active" onclick="selectBwRange(4,this)">4vko</span>
+      <span class="chart-tab" onclick="selectBwRange(12,this)">12vko</span>
+      <span class="chart-tab" onclick="selectBwRange(26,this)">6kk</span>
+      <span class="chart-tab" onclick="selectBwRange(0,this)">Kaikki</span>
+    </div>
+    <div class="chart-wrap"><canvas id="bw-chart"></canvas></div>
+    <div id="bw-stats" style="margin-top:8px;font-family:'DM Mono',monospace;font-size:11px;color:var(--text3);display:flex;gap:16px;flex-wrap:wrap;"></div>
+  </div>
+
+  <!-- Voima/paino-suhde -->
+  <div class="section-label">Voima / kehonpaino -suhde</div>
+  <div class="card" id="strength-ratio-card" style="margin-bottom:12px;"></div>
+
+  <!-- Aaltovertailu -->
+  <div class="section-label">Aaltojen vertailu</div>
+  <div class="card" style="margin-bottom:12px;">
+    <div class="row2" style="margin-bottom:12px;">
+      <div>
+        <div class="label">Aalto A</div>
+        <select id="wave-a-select" onchange="renderWaveComparison()"></select>
+      </div>
+      <div>
+        <div class="label">Aalto B</div>
+        <select id="wave-b-select" onchange="renderWaveComparison()"></select>
+      </div>
+    </div>
+    <div id="wave-comparison-content"></div>
+  </div>
+
+  <!-- Videot -->
+  <div class="section-label">Ennätysvideoita (max 4)</div>
+  <div class="card" style="margin-bottom:12px;">
+    <div id="video-list" style="margin-bottom:12px;"></div>
+    <div id="video-upload-area">
+      <div class="label">Lisää video</div>
+      <div class="row2" style="margin-bottom:8px;">
+        <div>
+          <div class="label">Otsikko</div>
+          <input type="text" id="video-title" placeholder="esim. Kyykky 160kg PR">
+        </div>
+        <div>
+          <div class="label">Päivämäärä</div>
+          <input type="date" id="video-date" style="font-family:'DM Mono',monospace;font-size:13px;">
+        </div>
+      </div>
+      <label class="btn btn-ghost btn-full" style="cursor:pointer;margin-bottom:8px;">
+        📹 Valitse video puhelimelta
+        <input type="file" id="video-file" accept="video/*" capture="environment"
+          style="display:none;" onchange="previewVideo(this)">
+      </label>
+      <video id="video-preview" style="display:none;width:100%;border-radius:8px;margin-bottom:8px;max-height:200px;" controls playsinline></video>
+      <button class="btn btn-primary btn-full" id="video-upload-btn" onclick="uploadVideo()" style="display:none;">
+        ⬆ Tallenna video
+      </button>
+      <div id="video-upload-progress" style="display:none;margin-top:8px;">
+        <div class="prog-bar"><div class="prog-fill" id="upload-prog-fill" style="width:0%"></div></div>
+        <div id="upload-prog-text" style="font-size:11px;color:var(--text3);margin-top:4px;font-family:'DM Mono',monospace;"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
 <!-- ══════════════════════════════════════════
      VIEW: SETTINGS
 ══════════════════════════════════════════ -->
@@ -586,6 +693,10 @@ create policy "public" on workouts for all using (true);
   <button class="nav-item" onclick="showView('analysis',this)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
     Analyysi
+  </button>
+  <button class="nav-item" onclick="showView('body',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/></svg>
+    Keho
   </button>
   <button class="nav-item" onclick="showView('settings',this)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
@@ -767,11 +878,11 @@ function getUserSessions(){
 function saveUserSessions(arr){localStorage.setItem('treeni_v3',JSON.stringify(arr));}
 function loadAllData(){
   const user=getUserSessions();
-  // User entries override historical: if same date exists in user, skip that date from HISTORICAL
-  const userDates=new Set(user.map(e=>e.date));
-  const filteredHist=HISTORICAL.filter(e=>!userDates.has(e.date));
-  // Filter out deletion sentinels
   const filteredUser=user.filter(e=>!e._deleted);
+  // User entries for a date FULLY replace historical for that date
+  // (avoids showing both historical + user-edited versions)
+  const overriddenDates=new Set(filteredUser.map(e=>e.date));
+  const filteredHist=HISTORICAL.filter(e=>!overriddenDates.has(e.date));
   allData=[...filteredHist,...filteredUser].sort((a,b)=>a.date.localeCompare(b.date));
 }
 function getSbConfig(){
@@ -888,6 +999,7 @@ function showView(name,btn){
   if(btn) btn.classList.add('active');
   if(name==='history') renderHistory();
   if(name==='analysis') renderAnalysis();
+  if(name==='body') initBodyView();
   if(name==='settings') renderSettings();
   document.getElementById('main-content').scrollTop=0;
 }
@@ -1018,7 +1130,7 @@ function addQuick(){
   if(!val) return;
   const p=parseQuickStr(val);
   if(!p.exercise){showToast('Kirjoita ainakin liike','');return;}
-  const sets=p.sets||'1x?';
+  const sets=p.sets||'1x1';
   const{r}=parseSetReps(sets);
   const e1=p.kg?epley(p.kg,r):null;
   const muscle=getMuscle(p.exercise||'');
@@ -1052,12 +1164,14 @@ function addDetailedExercise(){
     const reps=parseInt(document.getElementById('sr-reps-'+id)?.value)||null;
     const kg=parseFloat(document.getElementById('sr-kg-'+id)?.value)||null;
     const rpe=parseFloat(document.getElementById('sr-rpe-'+id)?.value)||null;
-    if(reps){
-      details.push({reps,kg,rpe,e1rm:kg?epley(kg,reps):null});
-      allSets++;allReps+=reps;
+    // Accept row if ANY field is filled
+    if(reps||kg||rpe){
+      const r=reps||1;
+      details.push({reps:r,kg,rpe,e1rm:kg?epley(kg,r):null});
+      allSets++;allReps+=r;
     }
   }
-  if(!details.length){showToast('Lisää vähintään yksi sarja','');return;}
+  if(!details.length){showToast('Täytä ainakin yksi kenttä','');return;}
 
   // Summary kg = best set
   const bestKg=Math.max(...details.filter(d=>d.kg).map(d=>d.kg));
@@ -1117,10 +1231,13 @@ function saveSession(){
   user.push(...currentSession);
   saveUserSessions(user);
   loadAllData();
-  showToast('Treeni tallennettu ✓','success');
+  const savedCount=currentSession.length;
+  showToast('Treeni tallennettu ✓ ('+savedCount+' liikettä)','success');
   if(_currentUser) syncNow();
   currentSession=[];
   renderSessionList();
+  // Always refresh history so it's ready when user switches tab
+  renderHistory();
 }
 function clearSession(){currentSession=[];renderSessionList();}
 
@@ -1288,11 +1405,21 @@ function renderEditModal(){
   const cont=document.getElementById("edit-modal-content");
 
   cont.innerHTML=`
-    <div style="font-size:12px;color:var(--text3);margin-bottom:14px;font-family:'DM Mono',monospace;">${date}</div>
+    <div style="margin-bottom:14px;">
+      <div class="label">Päivämäärä</div>
+      <input type="date" id="edit-date-field" value="${date}"
+        style="font-family:'DM Mono',monospace;font-size:13px;width:100%;"
+        onchange="window._editDate=this.value;window._editEntries.forEach(e=>e.date=this.value);">
+    </div>
     ${entries.map((e,i)=>`
     <div class="card-flat" id="edit-entry-${i}" style="margin-bottom:10px;border:1px solid var(--border);">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-        <span style="font-weight:500;font-size:14px;">${e.exercise}</span>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+        <span style="cursor:grab;color:var(--text3);font-size:18px;line-height:1;"
+          draggable="true"
+          ondragstart="dragStart(event,${i})"
+          ondragover="dragOver(event)"
+          ondrop="dragDrop(event,${i})">⋮⋮</span>
+        <span style="font-weight:500;font-size:14px;flex:1;">${e.exercise}</span>
         <button class="btn btn-danger btn-sm" onclick="deleteEditEntry(${i})">🗑 Poista</button>
       </div>
       <div class="row3" style="margin-bottom:8px;">
@@ -1354,6 +1481,22 @@ function renderEditModal(){
         </div>`).join("")}
       </div>`:""}
     </div>`).join("")}
+    <div class="card-flat" style="margin-bottom:10px;border:1px dashed var(--border2);">
+      <div style="font-size:13px;font-weight:500;margin-bottom:10px;">➕ Lisää liike</div>
+      <div class="row2" style="margin-bottom:8px;">
+        <div><div class="label">Liike</div>
+          <input type="text" id="edit-new-ex" placeholder="esim. Kyykky"></div>
+        <div><div class="label">Sarjat</div>
+          <input type="text" id="edit-new-sets" placeholder="3x5"></div>
+      </div>
+      <div class="row2" style="margin-bottom:8px;">
+        <div><div class="label">Paino (kg)</div>
+          <input type="number" id="edit-new-kg" placeholder="100" step="0.5"></div>
+        <div><div class="label">RPE</div>
+          <input type="number" id="edit-new-rpe" placeholder="7" min="1" max="10" step="0.5"></div>
+      </div>
+      <button class="btn btn-ghost btn-full btn-sm" onclick="addEditEntry()">+ Lisää tähän treeniin</button>
+    </div>
     <div style="display:flex;gap:8px;margin-top:4px;">
       <button class="btn btn-primary btn-full" onclick="saveEdits()">💾 Tallenna</button>
       <button class="btn btn-ghost" onclick="closeModal()" style="flex:1;">Peruuta</button>
@@ -1406,6 +1549,43 @@ function saveEdits(){
   renderHistory();
   if(_currentUser) syncNow();
   showToast("Muutokset tallennettu ✓","success");
+}
+
+
+function addEditEntry(){
+  const ex=document.getElementById('edit-new-ex').value.trim();
+  if(!ex){showToast('Kirjoita liikkeen nimi','');return;}
+  const sets=document.getElementById('edit-new-sets').value.trim()||'';
+  const kg=parseFloat(document.getElementById('edit-new-kg').value)||null;
+  const rpe=parseFloat(document.getElementById('edit-new-rpe').value)||null;
+  const date=window._editDate;
+  const muscle=getMuscle(ex)||'';
+  const{r}=parseSetReps(sets);
+  const e1rm=kg&&r?epley(kg,r):null;
+  window._editEntries.push({
+    exercise:ex,sets,kg,rpe,note:null,date,
+    week:'Viikko '+getCurrentWeekNum()+'.',
+    muscle,setDetails:[{reps:r||null,kg,rpe,e1rm}]
+  });
+  // Clear fields
+  document.getElementById('edit-new-ex').value='';
+  document.getElementById('edit-new-sets').value='';
+  document.getElementById('edit-new-kg').value='';
+  document.getElementById('edit-new-rpe').value='';
+  renderEditModal();
+}
+
+let _dragSrcIdx=null;
+function dragStart(e,i){_dragSrcIdx=i;e.dataTransfer.effectAllowed='move';}
+function dragOver(e){e.preventDefault();e.dataTransfer.dropEffect='move';}
+function dragDrop(e,i){
+  e.preventDefault();
+  if(_dragSrcIdx===null||_dragSrcIdx===i) return;
+  const arr=window._editEntries;
+  const moved=arr.splice(_dragSrcIdx,1)[0];
+  arr.splice(i,0,moved);
+  _dragSrcIdx=null;
+  renderEditModal();
 }
 
 function closeModal(){document.getElementById('edit-modal').classList.remove('open');}
@@ -2171,66 +2351,43 @@ function toggleAuthMode(){
 }
 
 async function authSubmit(){
-  const email = document.getElementById('auth-email').value.trim();
-  const pw = document.getElementById('auth-password').value;
-  const errEl = document.getElementById('auth-error');
-  const btn = document.getElementById('auth-btn');
-
-  errEl.style.display = 'none';
-  if(!email||!pw){
-    errEl.textContent='Täytä sähköposti ja salasana.';
-    errEl.style.display='block';
-    return;
-  }
-  // If _SB not ready yet, try to init
+  const email=document.getElementById('auth-email').value.trim();
+  const pw=document.getElementById('auth-password').value;
+  const errEl=document.getElementById('auth-error');
+  const btn=document.getElementById('auth-btn');
+  errEl.style.display='none';
+  if(!email||!pw){errEl.textContent='Täytä sähköposti ja salasana.';errEl.style.display='block';return;}
   if(!_SB){
-    if(typeof supabase!=='undefined'){
-      try{
-        const SB_URL='https://mgyqqvodjplwjopyghui.supabase.co';
-        const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1neXFxdm9kanBsd2pvcHlnaHVpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgwMjU3NjMsImV4cCI6MjA5MzYwMTc2M30.mWZKYWYSPLBgdXmT6m5zdBA6qI9VYBJHAw7DZFo5KmI';
-        _SB=supabase.createClient(SB_URL,SB_KEY);
-      }catch(e){
-        errEl.textContent='Yhteysongelma — lataa sivu uudelleen.';
-        errEl.style.display='block';
-        return;
-      }
-    } else {
-      errEl.textContent='Yhteysongelma — lataa sivu uudelleen.';
-      errEl.style.display='block';
-      return;
-    }
+    if(typeof supabase==='undefined'){errEl.textContent='Yhteysongelma — lataa sivu uudelleen.';errEl.style.display='block';return;}
+    try{_SB=supabase.createClient('https://mgyqqvodjplwjopyghui.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1neXFxdm9kanBsd2pvcHlnaHVpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgwMjU3NjMsImV4cCI6MjA5MzYwMTc2M30.mWZKYWYSPLBgdXmT6m5zdBA6qI9VYBJHAw7DZFo5KmI');}
+    catch(e){errEl.textContent='Yhteysongelma.';errEl.style.display='block';return;}
   }
-
-  btn.textContent='...'; btn.disabled=true;
+  btn.textContent='...';btn.disabled=true;
   let errMsg=null;
-
   try{
     if(_authMode==='signup'){
-      const pw2=document.getElementById('auth-password2').value;
-      if(pw!==pw2){ errMsg='Salasanat eivät täsmää.'; }
-      else if(pw.length<6){ errMsg='Salasana liian lyhyt (min. 6 merkkiä).'; }
+      const pw2=document.getElementById('auth-password2')?.value||'';
+      if(pw!==pw2) errMsg='Salasanat eivät täsmää.';
+      else if(pw.length<6) errMsg='Salasana liian lyhyt (min. 6 merkkiä).';
       else{
-        const {data,error}=await _SB.auth.signUp({email,password:pw});
-        if(error) errMsg=_authErr(error.message);
-        else if(data?.user) onAuthSuccess(data.user);
-        else errMsg='Rekisteröinti epäonnistui — yritä uudelleen.';
+        const r=await _SB.auth.signUp({email,password:pw});
+        if(r.error) errMsg=_authErr(r.error.message);
+        else if(r.data?.user) onAuthSuccess(r.data.user);
+        else errMsg='Rekisteröinti epäonnistui.';
       }
     } else {
-      const {data,error}=await _SB.auth.signInWithPassword({email,password:pw});
-      if(error) errMsg=_authErr(error.message);
-      else if(data?.user) onAuthSuccess(data.user);
-      else errMsg='Kirjautuminen epäonnistui — yritä uudelleen.';
+      const r=await _SB.auth.signInWithPassword({email,password:pw});
+      if(r.error) errMsg=_authErr(r.error.message);
+      else if(r.data?.user) onAuthSuccess(r.data.user);
+      else errMsg='Kirjautuminen epäonnistui.';
     }
   } catch(e){
-    console.error('Auth error:', e);
-    errMsg='Verkkovirhe: '+e.message;
-  }
-
-  btn.disabled=false;
-  btn.textContent=_authMode==='signup'?'Luo tili':'Kirjaudu';
-  if(errMsg){
-    errEl.textContent=errMsg;
-    errEl.style.display='block';
+    console.error('Auth error:',e);
+    errMsg='Verkkovirhe: '+(e?.message||'tuntematon');
+  } finally {
+    btn.disabled=false;
+    btn.textContent=_authMode==='signup'?'Luo tili':'Kirjaudu';
+    if(errMsg){errEl.textContent=errMsg;errEl.style.display='block';}
   }
 }
 
@@ -2311,6 +2468,413 @@ async function initAuth(){
     console.error('initAuth error:', e);
     // Still show auth screen so user can try
     document.getElementById('auth-screen').style.display='flex';
+  }
+}
+
+
+// ══════════════════════════════════════════════════════════
+// BODY VIEW — KEHONPAINO + AALTOVERTAILU + VIDEOT
+// ══════════════════════════════════════════════════════════
+
+let bwChart = null;
+let bwRangeWeeks = 4;
+
+// Storage keys
+const BW_KEY = 'treeni_bodyweight';
+const VIDEOS_KEY = 'treeni_videos';
+
+function getBodyWeights(){
+  try{return JSON.parse(localStorage.getItem(BW_KEY)||'[]');}catch{return[];}
+}
+function saveBodyWeights(arr){localStorage.setItem(BW_KEY,JSON.stringify(arr));}
+function getVideos(){
+  try{return JSON.parse(localStorage.getItem(VIDEOS_KEY)||'[]');}catch{return[];}
+}
+function saveVideos(arr){localStorage.setItem(VIDEOS_KEY,JSON.stringify(arr));}
+
+function initBodyView(){
+  document.getElementById('bw-date').value=TODAY;
+  document.getElementById('video-date').value=TODAY;
+  renderBwChart();
+  renderStrengthRatios();
+  renderWaveSelectors();
+  renderWaveComparison();
+  renderVideoList();
+}
+
+// ── KEHONPAINO ────────────────────────────────────────────
+function saveBodyWeight(){
+  const date=document.getElementById('bw-date').value;
+  const weight=parseFloat(document.getElementById('bw-weight').value);
+  if(!date||!weight||weight<30||weight>300){showToast('Syötä kelvollinen paino','');return;}
+  const arr=getBodyWeights();
+  // Update or add
+  const existing=arr.findIndex(e=>e.date===date);
+  if(existing>=0) arr[existing].weight=weight;
+  else arr.push({date,weight});
+  arr.sort((a,b)=>a.date.localeCompare(b.date));
+  saveBodyWeights(arr);
+  document.getElementById('bw-weight').value='';
+  renderBwChart();
+  renderStrengthRatios();
+  showToast('Paino tallennettu ✓','success');
+}
+
+function selectBwRange(weeks, btn){
+  bwRangeWeeks=weeks;
+  document.querySelectorAll('#bw-range-tabs .chart-tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderBwChart();
+}
+
+function renderBwChart(){
+  const all=getBodyWeights();
+  if(!all.length){
+    document.getElementById('bw-stats').textContent='Ei painodataa vielä.';
+    if(bwChart){bwChart.destroy();bwChart=null;}
+    return;
+  }
+
+  let pts=all;
+  if(bwRangeWeeks>0){
+    const cutoff=new Date(TODAY+'T12:00:00');
+    cutoff.setDate(cutoff.getDate()-bwRangeWeeks*7);
+    const cutStr=cutoff.toISOString().slice(0,10);
+    pts=all.filter(e=>e.date>=cutStr);
+  }
+  if(!pts.length) pts=all.slice(-10);
+
+  if(bwChart) bwChart.destroy();
+  const ctx=document.getElementById('bw-chart').getContext('2d');
+  bwChart=new Chart(ctx,{
+    type:'line',
+    data:{
+      labels:pts.map(p=>p.date.slice(5)),
+      datasets:[{
+        data:pts.map(p=>p.weight),
+        borderColor:'var(--blue)',
+        backgroundColor:'rgba(82,180,255,0.06)',
+        borderWidth:2,
+        pointRadius:3,
+        pointBackgroundColor:'var(--blue)',
+        tension:0.3,fill:true
+      }]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},
+        tooltip:{backgroundColor:'#222',borderColor:'#333',borderWidth:1,
+          callbacks:{label:c=>c.raw+' kg'}}
+      },
+      scales:{
+        x:{ticks:{color:'#666',font:{family:'DM Mono',size:9},maxTicksLimit:8},grid:{color:'#1a1a1a'}},
+        y:{ticks:{color:'#666',font:{family:'DM Mono',size:10}},grid:{color:'#1a1a1a'}}
+      }
+    }
+  });
+
+  // Stats
+  const weights=pts.map(p=>p.weight);
+  const min=Math.min(...weights),max=Math.max(...weights);
+  const latest=weights[weights.length-1];
+  const first=weights[0];
+  const diff=(latest-first).toFixed(1);
+  const sign=diff>=0?'+':'';
+  const diffColor=diff>=0?'var(--orange)':'var(--accent)';
+  document.getElementById('bw-stats').innerHTML=
+    '<span>Nyt: <span style="color:var(--blue)">'+latest+'kg</span></span>'+
+    '<span>Min: <span style="color:var(--text)">'+min+'kg</span></span>'+
+    '<span>Max: <span style="color:var(--text)">'+max+'kg</span></span>'+
+    '<span>Muutos: <span style="color:'+diffColor+'">'+sign+diff+'kg</span></span>';
+}
+
+function renderStrengthRatios(){
+  const el=document.getElementById('strength-ratio-card');
+  const bws=getBodyWeights();
+  if(!bws.length){el.innerHTML='<div style="font-size:13px;color:var(--text3);">Lisää kehonpaino ensin.</div>';return;}
+  const latestBw=bws[bws.length-1].weight;
+
+  let html=`<div style="font-size:12px;color:var(--text3);margin-bottom:10px;font-family:'DM Mono',monospace;">Kehonpaino: ${latestBw}kg</div>`;
+  MAIN_LIFTS.forEach(lift=>{
+    const entries=allData.filter(d=>d.exercise===lift&&d.kg&&d.kg>0);
+    if(!entries.length) return;
+    let maxE1=0;
+    entries.forEach(e=>{
+      const{r}=parseSetReps(e.sets);
+      const v=epley(e.kg,r)||e.kg;
+      if(v>maxE1) maxE1=v;
+    });
+    const ratio=(maxE1/latestBw).toFixed(2);
+    const pct=Math.round(maxE1/latestBw*100);
+    // Strength standards (rough)
+    let level='';
+    if(lift==='Kyykky'||lift==='Mave'){
+      level=ratio<1?'Aloittelija':ratio<1.5?'Keskitaso':ratio<2?'Edistynyt':'Eliitti';
+    } else if(lift==='Penkki'){
+      level=ratio<0.75?'Aloittelija':ratio<1.2?'Keskitaso':ratio<1.5?'Edistynyt':'Eliitti';
+    } else {
+      level=ratio<1?'Aloittelija':ratio<1.5?'Keskitaso':ratio<2?'Edistynyt':'Eliitti';
+    }
+    const colors={Aloittelija:'var(--text3)',Keskitaso:'var(--blue)',Edistynyt:'var(--accent)',Eliitti:'var(--gold)'};
+    html+=`<div class="ratio-row">
+      <div><div class="ratio-lift">${lift}</div>
+        <div class="ratio-sub">e1RM ${maxE1.toFixed(1)}kg</div></div>
+      <div style="text-align:right;">
+        <div class="ratio-val">${ratio}x BW</div>
+        <div style="font-size:10px;color:${colors[level]||"var(--text3)"};">${level}</div>
+      </div>
+    </div>`;
+  });
+  el.innerHTML=html;
+}
+
+// ── AALTOVERTAILU ─────────────────────────────────────────
+function renderWaveSelectors(){
+  try{
+    const{waves,byWeek}=detectWaves();
+    const opts=waves.map((w,i)=>{
+      const label=`Aalto ${i+1} (W${w[0]}-W${w[w.length-1]})`;
+      return`<option value="${i}">${label}</option>`;
+    }).join('');
+    document.getElementById('wave-a-select').innerHTML=opts;
+    document.getElementById('wave-b-select').innerHTML=opts;
+    // Default: last two waves
+    const n=waves.length;
+    if(n>=2){
+      document.getElementById('wave-a-select').value=n-2;
+      document.getElementById('wave-b-select').value=n-1;
+    }
+  }catch(e){console.warn('wave selectors:',e);}
+}
+
+function renderWaveComparison(){
+  const el=document.getElementById('wave-comparison-content');
+  try{
+    const{waves,byWeek}=detectWaves();
+    const ai=parseInt(document.getElementById('wave-a-select').value)||0;
+    const bi=parseInt(document.getElementById('wave-b-select').value)||1;
+    const waveA=waves[ai], waveB=waves[bi];
+    if(!waveA||!waveB){el.innerHTML='';return;}
+
+    function waveStats(wave){
+      const entries=wave.flatMap(wn=>byWeek[wn]?.entries||[]);
+      const vol=wave.reduce((s,wn)=>s+(byWeek[wn]?.vol||0),0);
+      const days=new Set(entries.map(e=>e.date)).size;
+      const peaks={};
+      MAIN_LIFTS.forEach(lift=>{
+        const lifts=entries.filter(e=>e.exercise===lift&&e.kg);
+        if(lifts.length){
+          let maxE1=0;
+          lifts.forEach(e=>{const{r}=parseSetReps(e.sets);const v=epley(e.kg,r)||e.kg;if(v>maxE1)maxE1=v;});
+          peaks[lift]=maxE1.toFixed(1);
+        }
+      });
+      const rpes=entries.filter(e=>e.rpe).map(e=>e.rpe);
+      const avgRpe=rpes.length?(rpes.reduce((a,b)=>a+b)/rpes.length).toFixed(1):'-';
+      return{vol:(vol/1000).toFixed(1),days,peaks,avgRpe,weeks:wave.length};
+    }
+
+    const sA=waveStats(waveA), sB=waveStats(waveB);
+
+    function cmp(a,b,higher='green'){
+      const av=parseFloat(a),bv=parseFloat(b);
+      if(isNaN(av)||isNaN(bv)) return['var(--text)','var(--text)'];
+      if(av===bv) return['var(--text)','var(--text)'];
+      if(higher==='green'){
+        return av>bv?['var(--accent)','var(--text)']:['var(--text)','var(--accent)'];
+      } else {
+        return av<bv?['var(--accent)','var(--text)']:['var(--text)','var(--accent)'];
+      }
+    }
+
+    const[vc1,vc2]=cmp(sA.vol,sB.vol);
+    const[dc1,dc2]=cmp(sA.days,sB.days);
+    const[rc1,rc2]=cmp(sA.avgRpe,sB.avgRpe,'red');
+
+    let liftRows='';
+    MAIN_LIFTS.forEach(lift=>{
+      const a=sA.peaks[lift]||'-', b=sB.peaks[lift]||'-';
+      const[lc1,lc2]=cmp(a,b);
+      liftRows+=`<div class="wave-cmp-stat">
+        <span style="color:var(--text2)">${lift} e1RM</span>
+        <div style="display:flex;gap:16px;">
+          <span class="wave-cmp-val" style="color:${lc1}">${a!=='-'?a+'kg':'-'}</span>
+          <span class="wave-cmp-val" style="color:${lc2}">${b!=='-'?b+'kg':'-'}</span>
+        </div>
+      </div>`;
+    });
+
+    el.innerHTML=`
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:10px;text-align:center;">
+        <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--accent);background:var(--accent-dim);border-radius:6px;padding:4px;">
+          Aalto ${ai+1} (W${waveA[0]}-W${waveA[waveA.length-1]})
+        </div>
+        <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--blue);background:rgba(82,180,255,0.1);border-radius:6px;padding:4px;">
+          Aalto ${bi+1} (W${waveB[0]}-W${waveB[waveB.length-1]})
+        </div>
+      </div>
+      <div class="wave-cmp-stat">
+        <span style="color:var(--text2)">Kesto</span>
+        <div style="display:flex;gap:16px;">
+          <span class="wave-cmp-val">${sA.weeks} vko</span>
+          <span class="wave-cmp-val">${sB.weeks} vko</span>
+        </div>
+      </div>
+      <div class="wave-cmp-stat">
+        <span style="color:var(--text2)">Treenipäivät</span>
+        <div style="display:flex;gap:16px;">
+          <span class="wave-cmp-val" style="color:${dc1}">${sA.days}</span>
+          <span class="wave-cmp-val" style="color:${dc2}">${sB.days}</span>
+        </div>
+      </div>
+      <div class="wave-cmp-stat">
+        <span style="color:var(--text2)">Kokonaisvolyymi</span>
+        <div style="display:flex;gap:16px;">
+          <span class="wave-cmp-val" style="color:${vc1}">${sA.vol}t</span>
+          <span class="wave-cmp-val" style="color:${vc2}">${sB.vol}t</span>
+        </div>
+      </div>
+      <div class="wave-cmp-stat">
+        <span style="color:var(--text2)">Avg RPE</span>
+        <div style="display:flex;gap:16px;">
+          <span class="wave-cmp-val" style="color:${rc1}">${sA.avgRpe}</span>
+          <span class="wave-cmp-val" style="color:${rc2}">${sB.avgRpe}</span>
+        </div>
+      </div>
+      ${liftRows}
+      <div style="font-size:10px;color:var(--text3);margin-top:8px;font-family:'DM Mono',monospace;">
+        Vihreä = korkeampi arvo · Huom: RPE vihreä = matalampi (kevyempi tunne)
+      </div>`;
+  }catch(e){
+    console.warn('wave comparison:',e);
+    el.innerHTML='<div style="color:var(--text3);font-size:13px;">Ei tarpeeksi dataa vertailuun.</div>';
+  }
+}
+
+// ── VIDEOT ────────────────────────────────────────────────
+function previewVideo(input){
+  const file=input.files[0];
+  if(!file) return;
+  // Check size (max 80MB)
+  if(file.size>80*1024*1024){showToast('Video liian iso (max 80MB)','');return;}
+  const preview=document.getElementById('video-preview');
+  preview.src=URL.createObjectURL(file);
+  preview.style.display='block';
+  document.getElementById('video-upload-btn').style.display='flex';
+}
+
+async function uploadVideo(){
+  const file=document.getElementById('video-file').files[0];
+  const title=document.getElementById('video-title').value.trim();
+  const date=document.getElementById('video-date').value;
+  if(!file){showToast('Valitse video ensin','');return;}
+  if(!title){showToast('Anna videolle otsikko','');return;}
+
+  const videos=getVideos();
+  if(videos.length>=4){showToast('Max 4 videota — poista ensin vanha','');return;}
+
+  if(!_currentUser){showToast('Kirjaudu ensin','');return;}
+
+  // Show progress
+  const prog=document.getElementById('video-upload-progress');
+  const fill=document.getElementById('upload-prog-fill');
+  const txt=document.getElementById('upload-prog-text');
+  prog.style.display='block';
+  fill.style.width='10%';
+  txt.textContent='Ladataan...';
+
+  try{
+    const{data:{session}}=await _SB.auth.getSession();
+    if(!session) throw new Error('Ei istuntoa');
+
+    const ext=file.name.split('.').pop()||'mp4';
+    const filename=`${_currentUser.id}/${Date.now()}.${ext}`;
+
+    // Upload to Supabase Storage
+    const {data,error}=await _SB.storage
+      .from('videos')
+      .upload(filename, file, {
+        cacheControl:'3600',
+        upsert:false,
+        onUploadProgress:(p)=>{
+          const pct=Math.round(p.loaded/p.total*100);
+          fill.style.width=pct+'%';
+          txt.textContent=pct+'% ladattu...';
+        }
+      });
+
+    if(error) throw error;
+
+    // Get public URL
+    const {data:{publicUrl}}=_SB.storage.from('videos').getPublicUrl(filename);
+
+    // Save metadata locally
+    videos.push({id:Date.now(),title,date,filename,url:publicUrl,size:file.size});
+    saveVideos(videos);
+
+    fill.style.width='100%';
+    txt.textContent='Valmis!';
+    setTimeout(()=>{prog.style.display='none';fill.style.width='0%';},2000);
+
+    // Reset form
+    document.getElementById('video-title').value='';
+    document.getElementById('video-preview').style.display='none';
+    document.getElementById('video-upload-btn').style.display='none';
+    document.getElementById('video-file').value='';
+
+    renderVideoList();
+    showToast('Video tallennettu ✓','success');
+  }catch(e){
+    console.error('Video upload error:',e);
+    fill.style.width='0%';
+    txt.textContent='Virhe: '+e.message;
+    showToast('Lataus epäonnistui: '+e.message,'');
+  }
+}
+
+async function deleteVideo(id){
+  if(!confirm('Poistetaanko video?')) return;
+  const videos=getVideos();
+  const v=videos.find(x=>x.id===id);
+  if(!v) return;
+
+  // Delete from Supabase Storage
+  try{
+    if(_currentUser&&v.filename){
+      await _SB.storage.from('videos').remove([v.filename]);
+    }
+  }catch(e){console.warn('Storage delete:',e);}
+
+  const updated=videos.filter(x=>x.id!==id);
+  saveVideos(updated);
+  renderVideoList();
+  showToast('Video poistettu','success');
+}
+
+function renderVideoList(){
+  const el=document.getElementById('video-list');
+  const videos=getVideos();
+  if(!videos.length){
+    el.innerHTML='<div style="font-size:13px;color:var(--text3);padding:8px 0;">Ei videoita vielä. Tallenna korkeintaan 4 ennätysvideota.</div>';
+    return;
+  }
+  el.innerHTML=videos.map(v=>{
+    const sizeMB=(v.size/1024/1024).toFixed(1);
+    return`<div class="video-item">
+      <video class="video-thumb" src="${v.url}" preload="metadata"
+        onclick="this.requestFullscreen?this.requestFullscreen():this.webkitRequestFullscreen?.()"></video>
+      <div class="video-info">
+        <div class="video-title-text">${v.title}</div>
+        <div class="video-meta">${v.date} · ${sizeMB}MB</div>
+      </div>
+      <button class="btn btn-danger btn-sm" onclick="deleteVideo(${v.id})">🗑</button>
+    </div>`;
+  }).join('');
+
+  // Show upload area only if < 4 videos
+  document.getElementById('video-upload-area').style.display=videos.length>=4?'none':'block';
+  if(videos.length>=4){
+    el.innerHTML+='<div style="font-size:12px;color:var(--orange);margin-top:8px;">Maksimi 4 videota täynnä — poista vanha lisätäksesi uuden.</div>';
   }
 }
 
