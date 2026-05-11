@@ -284,6 +284,22 @@ details summary::-webkit-details-marker{display:none;}
 .video-meta{font-size:11px;color:var(--text3);font-family:'DM Mono',monospace;margin-top:2px;}
 .prog-bar{height:4px;background:var(--bg3);border-radius:2px;overflow:hidden;}
 .prog-fill{height:100%;background:var(--accent);border-radius:2px;transition:width 0.3s;}
+
+/* ── PR VIEW ── */
+.pr-card{background:linear-gradient(135deg,var(--bg2) 0%,var(--bg3) 100%);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:10px;position:relative;overflow:hidden;}
+.pr-card::before{content:"";position:absolute;top:-20px;right:-20px;width:80px;height:80px;background:radial-gradient(circle,rgba(255,209,102,0.15) 0%,transparent 70%);}
+.pr-card-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;position:relative;}
+.pr-lift-name{font-size:16px;font-weight:600;}
+.pr-medal{font-size:24px;}
+.pr-value{font-family:'DM Mono',monospace;font-size:32px;font-weight:500;color:var(--gold);line-height:1;}
+.pr-value-sub{font-family:'DM Mono',monospace;font-size:11px;color:var(--purple);margin-top:2px;}
+.pr-meta-row{display:flex;justify-content:space-between;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-size:11px;color:var(--text3);font-family:'DM Mono',monospace;}
+.pr-list-item{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);}
+.pr-list-item:last-child{border-bottom:none;}
+.pr-list-lift{font-size:13px;color:var(--text);}
+.pr-list-date{font-size:11px;color:var(--text3);font-family:'DM Mono',monospace;margin-top:2px;}
+.pr-list-val{font-family:'DM Mono',monospace;font-size:14px;color:var(--gold);text-align:right;}
+.pr-list-improve{font-size:10px;color:var(--accent);font-family:'DM Mono',monospace;}
 </style>
 </head>
 <body>
@@ -522,6 +538,37 @@ details summary::-webkit-details-marker{display:none;}
 </div>
 
 
+
+<!-- ══════════════════════════════════════════
+     VIEW: PR (Ennätykset)
+══════════════════════════════════════════ -->
+<div class="view" id="view-pr">
+
+  <!-- All-time PR cards -->
+  <div class="section-label">All-time ennätykset</div>
+  <div id="pr-cards-container" style="margin-bottom:16px;"></div>
+
+  <!-- PR timeline -->
+  <div class="section-label">Ennätyshistoria</div>
+  <div class="card" style="margin-bottom:12px;">
+    <div class="chart-tabs" id="pr-lift-tabs"></div>
+    <div class="chart-wrap"><canvas id="pr-chart"></canvas></div>
+    <div id="pr-timeline-stats" style="margin-top:8px;font-family:'DM Mono',monospace;font-size:11px;color:var(--text3);"></div>
+  </div>
+
+  <!-- All-time stats summary -->
+  <div class="section-label">Yhteenveto</div>
+  <div class="card" style="margin-bottom:12px;">
+    <div id="pr-summary"></div>
+  </div>
+
+  <!-- Recent PRs list -->
+  <div class="section-label">Viimeisimmät ennätykset</div>
+  <div class="card">
+    <div id="recent-prs"></div>
+  </div>
+
+</div>
 <!-- ══════════════════════════════════════════
      VIEW: BODY (kehonpaino + videot + aaltovertailu)
 ══════════════════════════════════════════ -->
@@ -590,11 +637,18 @@ details summary::-webkit-details-marker{display:none;}
           <input type="date" id="video-date" style="font-family:'DM Mono',monospace;font-size:13px;">
         </div>
       </div>
-      <label class="btn btn-ghost btn-full" style="cursor:pointer;margin-bottom:8px;">
-        📹 Valitse video puhelimelta
-        <input type="file" id="video-file" accept="video/*" capture="environment"
-          style="display:none;" onchange="previewVideo(this)">
-      </label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+        <label class="btn btn-ghost" style="cursor:pointer;text-align:center;">
+          🎞 Galleriasta
+          <input type="file" id="video-file" accept="video/*"
+            style="display:none;" onchange="previewVideo(this)">
+        </label>
+        <label class="btn btn-ghost" style="cursor:pointer;text-align:center;">
+          📹 Kuvaa uusi
+          <input type="file" id="video-camera" accept="video/*" capture="environment"
+            style="display:none;" onchange="previewVideoFromCamera(this)">
+        </label>
+      </div>
       <video id="video-preview" style="display:none;width:100%;border-radius:8px;margin-bottom:8px;max-height:200px;" controls playsinline></video>
       <button class="btn btn-primary btn-full" id="video-upload-btn" onclick="uploadVideo()" style="display:none;">
         ⬆ Tallenna video
@@ -693,6 +747,10 @@ create policy "public" on workouts for all using (true);
   <button class="nav-item" onclick="showView('analysis',this)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
     Analyysi
+  </button>
+  <button class="nav-item" onclick="showView('pr',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
+    PR
   </button>
   <button class="nav-item" onclick="showView('body',this)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/></svg>
@@ -999,6 +1057,7 @@ function showView(name,btn){
   if(btn) btn.classList.add('active');
   if(name==='history') renderHistory();
   if(name==='analysis') renderAnalysis();
+  if(name==='pr') initPrView();
   if(name==='body') initBodyView();
   if(name==='settings') renderSettings();
   document.getElementById('main-content').scrollTop=0;
@@ -2752,6 +2811,21 @@ function renderWaveComparison(){
 }
 
 // ── VIDEOT ────────────────────────────────────────────────
+function previewVideoFromCamera(input){
+  // Camera capture - pass file directly to preview
+  const file=input.files[0];
+  if(!file) return;
+  if(file.size>80*1024*1024){showToast('Video liian iso (max 80MB)','');return;}
+  const preview=document.getElementById('video-preview');
+  preview.src=URL.createObjectURL(file);
+  preview.style.display='block';
+  document.getElementById('video-upload-btn').style.display='flex';
+  // Copy file to video-file input for uploadVideo to read
+  const dt=new DataTransfer();
+  dt.items.add(file);
+  document.getElementById('video-file').files=dt.files;
+}
+
 function previewVideo(input){
   const file=input.files[0];
   if(!file) return;
@@ -2876,6 +2950,218 @@ function renderVideoList(){
   if(videos.length>=4){
     el.innerHTML+='<div style="font-size:12px;color:var(--orange);margin-top:8px;">Maksimi 4 videota täynnä — poista vanha lisätäksesi uuden.</div>';
   }
+}
+
+
+// ══════════════════════════════════════════════════════════
+// PR VIEW
+// ══════════════════════════════════════════════════════════
+let prChart = null;
+let selectedPrLift = 'Kyykky';
+
+function initPrView(){
+  renderPrCards();
+  renderPrLiftTabs();
+  renderPrChart(selectedPrLift);
+  renderPrSummary();
+  renderRecentPrs();
+}
+
+function getPrData(lift){
+  const entries = allData.filter(d=>d.exercise===lift&&d.kg&&d.kg>0);
+  if(!entries.length) return null;
+  // Sort by date
+  entries.sort((a,b)=>a.date.localeCompare(b.date));
+  // Track running max e1RM
+  let maxKg=0, maxE1=0;
+  const prHistory = [];
+  entries.forEach(e=>{
+    const {r} = parseSetReps(e.sets);
+    const e1 = epley(e.kg, r) || e.kg;
+    if(e.kg > maxKg || e1 > maxE1){
+      const isKgPR = e.kg > maxKg;
+      const isE1PR = e1 > maxE1;
+      if(isKgPR) maxKg = e.kg;
+      if(isE1PR) maxE1 = e1;
+      prHistory.push({...e, e1rm: e1, isKgPR, isE1PR});
+    }
+  });
+  return {entries, prHistory, maxKg, maxE1};
+}
+
+function renderPrCards(){
+  const cont = document.getElementById('pr-cards-container');
+  const medals = ['🥇','🥈','🥉','💪'];
+  cont.innerHTML = MAIN_LIFTS.map((lift,i)=>{
+    const data = getPrData(lift);
+    if(!data) return `<div class="pr-card"><div class="pr-card-header">
+      <div class="pr-lift-name">${lift}</div>
+      <div class="pr-medal">${medals[i]}</div></div>
+      <div style="color:var(--text3);font-size:13px;">Ei vielä dataa</div></div>`;
+
+    // Find the date of max kg
+    const maxKgEntry = data.entries.reduce((b,e)=>e.kg>b.kg?e:b, data.entries[0]);
+    const daysSince = Math.floor((new Date(TODAY) - new Date(maxKgEntry.date))/(864e5));
+    return `<div class="pr-card">
+      <div class="pr-card-header">
+        <div>
+          <div class="pr-lift-name">${lift}</div>
+          <div style="font-size:11px;color:var(--text3);font-family:'DM Mono',monospace;margin-top:2px;">
+            ${maxKgEntry.date} · ${maxKgEntry.sets||''}
+          </div>
+        </div>
+        <div class="pr-medal">${medals[i]}</div>
+      </div>
+      <div class="pr-value">${data.maxKg}kg</div>
+      <div class="pr-value-sub">est. 1RM ${data.maxE1.toFixed(1)}kg</div>
+      <div class="pr-meta-row">
+        <span>PR-suorituksia: ${data.prHistory.length}</span>
+        <span>${daysSince}pv sitten</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderPrLiftTabs(){
+  const liftsWithData = MAIN_LIFTS.filter(l => getPrData(l));
+  document.getElementById('pr-lift-tabs').innerHTML = liftsWithData.map(l=>
+    `<span class="chart-tab ${l===selectedPrLift?'active':''}" onclick="selectPrLift('${l}')">${l}</span>`
+  ).join('');
+}
+
+function selectPrLift(lift){
+  selectedPrLift = lift;
+  renderPrLiftTabs();
+  renderPrChart(lift);
+}
+
+function renderPrChart(lift){
+  const data = getPrData(lift);
+  if(!data || !data.prHistory.length){
+    if(prChart){prChart.destroy(); prChart=null;}
+    document.getElementById('pr-timeline-stats').textContent='Ei PR-historiaa.';
+    return;
+  }
+
+  const pts = data.prHistory;
+  if(prChart) prChart.destroy();
+  const ctx = document.getElementById('pr-chart').getContext('2d');
+  prChart = new Chart(ctx, {
+    type:'line',
+    data:{
+      labels: pts.map(p=>p.date.slice(5)),
+      datasets:[{
+        label:'PR (kg)',
+        data: pts.map(p=>p.kg),
+        borderColor:'#ffd166',
+        backgroundColor:'rgba(255,209,102,0.06)',
+        borderWidth:2,
+        pointRadius:6,
+        pointBackgroundColor:'#ffd166',
+        pointBorderColor:'#fff',
+        pointBorderWidth:1,
+        stepped: false,
+        tension:0,
+        fill:true
+      }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{backgroundColor:'#222',borderColor:'#333',borderWidth:1,
+          callbacks:{
+            title: items => pts[items[0].dataIndex].date,
+            label: item => pts[item.dataIndex].sets + ' @ ' + item.raw + 'kg',
+            afterBody: items => ['🏆 Uusi PR!']
+          }
+        }
+      },
+      scales:{
+        x:{ticks:{color:'#666',font:{family:'DM Mono',size:9},maxTicksLimit:8},grid:{color:'#1a1a1a'}},
+        y:{ticks:{color:'#666',font:{family:'DM Mono',size:10}},grid:{color:'#1a1a1a'}}
+      }
+    }
+  });
+
+  // Stats
+  const totalPrs = pts.length;
+  const firstPr = pts[0];
+  const lastPr = pts[pts.length-1];
+  const totalGain = (lastPr.kg - firstPr.kg).toFixed(1);
+  const daySpan = Math.max(1, Math.floor((new Date(lastPr.date) - new Date(firstPr.date))/(864e5)));
+  const gainPerMonth = (totalGain / daySpan * 30).toFixed(2);
+  document.getElementById('pr-timeline-stats').innerHTML =
+    `PR-suorituksia: ${totalPrs} · Nousu: +${totalGain}kg (${daySpan}pv) · ${gainPerMonth}kg/kk`;
+}
+
+function renderPrSummary(){
+  const el = document.getElementById('pr-summary');
+  // Total stats
+  const totalDays = new Set(allData.map(d=>d.date)).size;
+  const allLiftsData = MAIN_LIFTS.map(l => getPrData(l)).filter(Boolean);
+  const totalPrs = allLiftsData.reduce((s,d)=>s+d.prHistory.length, 0);
+  const totalKgLifted = allData.reduce((s,d)=>{
+    const {s:sets,r:reps} = parseSetReps(d.sets);
+    return s + sets*reps*(d.kg||0);
+  },0);
+  const totalLifts = MAIN_LIFTS.filter(l=>getPrData(l)).length;
+  // Combined PR total (powerlifting total)
+  let combinedTotal = 0;
+  const plLifts = ['Kyykky','Penkki','Mave'];
+  plLifts.forEach(l => {
+    const d = getPrData(l);
+    if(d) combinedTotal += d.maxKg;
+  });
+
+  el.innerHTML = `
+    <div class="ratio-row">
+      <span class="ratio-lift">Yhteenlaskettu PR (S+B+D)</span>
+      <span class="ratio-val">${combinedTotal}kg</span>
+    </div>
+    <div class="ratio-row">
+      <span class="ratio-lift">PR-suorituksia yhteensä</span>
+      <span class="ratio-val">${totalPrs}</span>
+    </div>
+    <div class="ratio-row">
+      <span class="ratio-lift">Treenipäiviä</span>
+      <span class="ratio-val">${totalDays}</span>
+    </div>
+    <div class="ratio-row">
+      <span class="ratio-lift">Nostettu yhteensä</span>
+      <span class="ratio-val">${(totalKgLifted/1000).toFixed(0)}t</span>
+    </div>`;
+}
+
+function renderRecentPrs(){
+  const el = document.getElementById('recent-prs');
+  // Get all PRs from all lifts, sort by date, take last 10
+  let allPrs = [];
+  MAIN_LIFTS.forEach(lift => {
+    const data = getPrData(lift);
+    if(!data) return;
+    // Calculate improvement from previous PR
+    data.prHistory.forEach((pr, i) => {
+      const prev = i>0 ? data.prHistory[i-1].kg : 0;
+      const improvement = prev>0 ? pr.kg - prev : 0;
+      allPrs.push({...pr, lift, improvement});
+    });
+  });
+  allPrs.sort((a,b)=>b.date.localeCompare(a.date));
+  allPrs = allPrs.slice(0, 10);
+
+  if(!allPrs.length){el.innerHTML='<div style="font-size:13px;color:var(--text3);">Ei vielä ennätyksiä</div>';return;}
+  el.innerHTML = allPrs.map(pr => `
+    <div class="pr-list-item">
+      <div>
+        <div class="pr-list-lift">${pr.lift}</div>
+        <div class="pr-list-date">${pr.date} · ${pr.sets||''}</div>
+      </div>
+      <div style="text-align:right;">
+        <div class="pr-list-val">${pr.kg}kg</div>
+        ${pr.improvement>0?`<div class="pr-list-improve">+${pr.improvement.toFixed(1)}kg</div>`:''}
+      </div>
+    </div>`).join('');
 }
 
 initTheme();
