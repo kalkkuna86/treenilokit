@@ -2877,7 +2877,8 @@ async function uploadVideo(){
 
     if(error){
       console.error('Storage error:', JSON.stringify(error));
-      throw new Error(error.message || JSON.stringify(error));
+      const msg = error.message || error.statusCode || error.error || JSON.stringify(error);
+      throw new Error('Storage: ' + msg + ' (bucket: Videos)');
     }
 
     fill.style.width='80%';
@@ -2907,8 +2908,13 @@ async function uploadVideo(){
   }catch(e){
     console.error('Video upload error:',e);
     fill.style.width='0%';
-    txt.textContent='Virhe: '+e.message;
-    showToast('Lataus epäonnistui: '+e.message,'');
+    const errDetail = e.message || e.error_description || JSON.stringify(e);
+    txt.textContent='Virhe: '+errDetail;
+    txt.style.color='var(--red)';
+    txt.style.fontSize='11px';
+    txt.style.wordBreak='break-all';
+    prog.style.display='block';
+    // Keep visible so user can read it
   }
 }
 
