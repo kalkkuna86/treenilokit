@@ -2865,22 +2865,28 @@ async function uploadVideo(){
     const filename=`${_currentUser.id}/${Date.now()}.${ext}`;
 
     // Upload to Supabase Storage
+    txt.textContent='Ladataan... (voi kestää hetken)';
+    fill.style.width='30%';
+
     const {data,error}=await _SB.storage
-      .from('videos')
+      .from('Videos')
       .upload(filename, file, {
         cacheControl:'3600',
-        upsert:false,
-        onUploadProgress:(p)=>{
-          const pct=Math.round(p.loaded/p.total*100);
-          fill.style.width=pct+'%';
-          txt.textContent=pct+'% ladattu...';
-        }
+        upsert:false
       });
 
-    if(error) throw error;
+    if(error){
+      console.error('Storage error:', JSON.stringify(error));
+      throw new Error(error.message || JSON.stringify(error));
+    }
+
+    fill.style.width='80%';
+    txt.textContent='Haetaan osoitetta...';
 
     // Get public URL
-    const {data:{publicUrl}}=_SB.storage.from('videos').getPublicUrl(filename);
+    const urlResult=_SB.storage.from('Videos').getPublicUrl(filename);
+    const publicUrl=urlResult.data?.publicUrl;
+    if(!publicUrl) throw new Error('URL-haku epäonnistui');
 
     // Save metadata locally
     videos.push({id:Date.now(),title,date,filename,url:publicUrl,size:file.size});
@@ -2915,7 +2921,7 @@ async function deleteVideo(id){
   // Delete from Supabase Storage
   try{
     if(_currentUser&&v.filename){
-      await _SB.storage.from('videos').remove([v.filename]);
+      await _SB.storage.from('Videos').remove([v.filename]);
     }
   }catch(e){console.warn('Storage delete:',e);}
 
