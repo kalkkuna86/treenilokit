@@ -254,7 +254,7 @@ details summary::-webkit-details-marker{display:none;}
 /* ── AUTH ── */
 .auth-screen{position:fixed;inset:0;background:var(--bg);z-index:2000;display:flex;align-items:flex-start;justify-content:center;padding:16px;overflow-y:auto;}
 .auth-box{background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:28px 20px 32px;width:100%;max-width:400px;margin-top:auto;margin-bottom:auto;}
-.auth-logo{font-family:'DM Mono',monospace;font-size:28px;color:var(--accent);text-align:center;margin-bottom:4px;}
+.auth-logo{text-align:center;margin-bottom:8px;display:flex;justify-content:center;align-items:center;}
 .auth-sub{font-size:13px;color:var(--text3);text-align:center;margin-bottom:28px;}
 .auth-title{font-size:18px;font-weight:600;margin-bottom:20px;}
 .auth-field{margin-bottom:12px;}
@@ -307,7 +307,18 @@ details summary::-webkit-details-marker{display:none;}
 <!-- AUTH SCREEN -->
 <div id="auth-screen" class="auth-screen">
   <div class="auth-box">
-    <div class="auth-logo">⚡</div>
+    <div class="auth-logo" style="font-size:0;line-height:0;"><svg viewBox="0 0 100 50" width="80" height="40" xmlns="http://www.w3.org/2000/svg">
+  <!-- Bar -->
+  <rect x="20" y="23" width="60" height="4" rx="2" fill="#c8f55a"/>
+  <!-- Left outer plate -->
+  <rect x="13" y="16" width="7" height="18" rx="2" fill="#c8f55a"/>
+  <!-- Left inner plate -->
+  <rect x="20" y="12.5" width="9" height="25" rx="2" fill="#c8f55a"/>
+  <!-- Right outer plate -->
+  <rect x="80" y="16" width="7" height="18" rx="2" fill="#c8f55a"/>
+  <!-- Right inner plate -->
+  <rect x="71" y="12.5" width="9" height="25" rx="2" fill="#c8f55a"/>
+</svg></div>
     <div class="auth-sub">Treenilokit</div>
     <div class="auth-title" id="auth-title">Kirjaudu sisään</div>
     <div class="auth-error" id="auth-error"></div>
