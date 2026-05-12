@@ -2815,10 +2815,7 @@ function onAuthSuccess(user){
   renderSessionList();
   setTimeout(loadFromCloud, 800);
   // Start on home view
-  setTimeout(()=>{
-    const homeBtn=document.querySelector(".nav-item");
-    if(homeBtn) homeBtn.click();
-  }, 100);
+  setTimeout(()=>goToView('home'), 100);
 }
 
 async function signOut(){
@@ -3532,13 +3529,14 @@ function renderRecentPrs(){
 // HOME VIEW
 // ══════════════════════════════════════════════════════════
 function goToView(name){
-  // Find the nav button for this view and click it
+  // Find the matching nav button
   const navBtns = document.querySelectorAll('.nav-item');
+  let targetBtn = null;
   navBtns.forEach(btn=>{
-    if(btn.getAttribute('onclick') && btn.getAttribute('onclick').includes("'"+name+"'")){
-      btn.click();
-    }
+    const oc = btn.getAttribute('onclick')||'';
+    if(oc.includes("'"+name+"'")){targetBtn=btn;}
   });
+  showView(name, targetBtn);
 }
 
 function initHomeView(){
