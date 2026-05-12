@@ -1332,8 +1332,12 @@ function parseQuick(){
     if(p.kg) parts.push(p.kg+'kg');
     if(p.rpe) parts.push('RPE'+p.rpe);
     if(p.kg&&p.sets){const{r}=parseSetReps(p.sets);const e1=epley(p.kg,r);if(e1&&r>1) parts.push('→ e1RM '+e1+'kg');}
+    res.style.color='var(--accent)';
     res.textContent='✓ '+parts.join(' · ');
-  } else res.textContent='';
+  } else {
+    res.style.color='var(--text3)';
+    res.textContent='Kirjoita: liike [NxM] [kg] [rpeN]';
+  }
 }
 function addQuick(){
   const val=document.getElementById('quick-input').value.trim();
@@ -1460,7 +1464,7 @@ function renderSetDetails(details){
     const e1badge=s.e1rm&&s.reps>1?'<span class="e1rm-badge">~'+s.e1rm+'</span>':'';
     return'<div class="set-row" style="padding:2px 0;">'
       +'<span class="set-num">'+(j+1)+'</span>'
-      +'<span class="set-detail" style="font-size:12px;">'+(s.reps||'?')+'t'+(s.kg?' @ '+s.kg+'kg':'')+(s.rpe?' RPE'+s.rpe:'')+'</span>'
+      +'<span class="set-detail" style="font-size:12px;">'+(s.reps||'?')+'x'+(s.kg?' @ '+s.kg+'kg':'')+(s.rpe?' RPE'+s.rpe:'')+'</span>'
       +e1badge
       +'</div>';
   }).join('')}</div>`;
@@ -3332,8 +3336,7 @@ initPWA();
 initAuth();
 
 function loadFromCloud(){
-  if(!_SB){return;}
-  if(!_currentUser) return;
+  if(!_SB||!_currentUser) return;
   _SB.auth.getSession().then(({data:{session}})=>{
     if(!session) return;
     const cfg=getSbConfig();
@@ -3341,14 +3344,22 @@ function loadFromCloud(){
     fetch(cfg.url+'/rest/v1/workouts?user_id=eq.'+_currentUser.id+'&select=data&order=created_at.desc&limit=1',{
       headers:{'apikey':cfg.key,'Authorization':'Bearer '+token}
     }).then(r=>r.ok?r.json():null).then(rows=>{
-      if(!rows||!rows.length) return;
+      if(!rows||!rows.length){updateSyncStatus('ok');return;}
       try{
         const cloud=JSON.parse(rows[0].data);
-        if(!cloud||!cloud.length) return;
-        // Replace local with cloud (cloud is source of truth)
-        saveUserSessions(cloud);
-        loadAllData();
-        showToast('Data ladattu pilvestä ✓','success');
+        if(!cloud||!cloud.length){updateSyncStatus('ok');return;}
+        // MERGE: combine local + cloud, prefer local for same date
+        const local=getUserSessions();
+        const localDates=new Set(local.map(e=>e.date));
+        // Add cloud entries only for dates not in local
+        const cloudOnly=cloud.filter(e=>!localDates.has(e.date));
+        const merged=[...local,...cloudOnly];
+        if(merged.length>local.length){
+          saveUserSessions(merged);
+          loadAllData();
+          const added=merged.length-local.length;
+          showToast('Ladattu '+added+' kirjausta pilvestä ✓','success');
+        }
         updateSyncStatus('ok');
       }catch(e){console.error('Cloud parse error:',e);}
     }).catch(e=>console.log('Cloud load skipped:',e));
