@@ -1270,8 +1270,8 @@ function getMuscle(exercise) {
 // ══════════════════════════════════════════════════════════
 const TODAY = new Date().toISOString().slice(0,10);
 let allData=[], currentSession=[], editingEntry=null;
-let progressChart=null, rpeChart=null;
-let selectedLift='Kyykky', selectedRpeLift='Kyykky';
+let progressChart=null;
+let selectedLift='Kyykky';
 const MAIN_LIFTS=['Kyykky','Penkki','Mave','SSB'];
 let setRowCount=0;
 
@@ -1635,17 +1635,22 @@ function renderSessionList(){
 }
 
 function saveSession(){
-  if(!currentSession.length) return;
+  if(!currentSession.length){
+    showToast('Ei lisättyjä liikkeitä','');
+    return;
+  }
   const user=getUserSessions();
+  const before=user.length;
   user.push(...currentSession);
   saveUserSessions(user);
+  const after=getUserSessions().length;
+  console.log('Saved: before='+before+' after='+after+' entries='+currentSession.length);
   loadAllData();
   const savedCount=currentSession.length;
   showToast('Treeni tallennettu ✓ ('+savedCount+' liikettä)','success');
   if(_currentUser) syncNow();
   currentSession=[];
   renderSessionList();
-  // Always refresh history so it's ready when user switches tab
   renderHistory();
 }
 function clearSession(){currentSession=[];renderSessionList();}
@@ -2319,57 +2324,10 @@ function renderForecast(lift, pts){
   </div>`;
 }
 
-function renderRpeTabs(){
-  const lifts=MAIN_LIFTS.filter(l=>allData.some(d=>d.exercise===l&&d.rpe&&d.kg));
-  document.getElementById('rpe-tabs').innerHTML=lifts.map(l=>
-    `<span class="chart-tab ${l===selectedRpeLift?'active':''}" onclick="selectRpeLift('${l}')">${l}</span>`
-  ).join('');
-}
-function selectRpeLift(l){selectedRpeLift=l;renderRpeTabs();renderRpeChart(l);}
 
-function renderRpeChart(lift){
-  const entries=allData.filter(d=>d.exercise===lift&&d.rpe&&d.kg).sort((a,b)=>a.date.localeCompare(b.date));
-  if(!entries.length){
-    if(rpeChart){rpeChart.destroy();rpeChart=null;}
-    document.getElementById('rpe-info').textContent='Ei RPE-dataa.';return;
-  }
-  const pts=entries.map(e=>({x:e.kg,y:e.rpe,date:e.date.slice(5)}));
-  if(rpeChart) rpeChart.destroy();
-  const ctx2=document.getElementById('rpe-chart').getContext('2d');
-  rpeChart=new Chart(ctx2,{
-    type:'scatter',
-    data:{datasets:[{
-      data:pts.map(p=>({x:p.x,y:p.y})),
-      backgroundColor:pts.map(p=>p.y<=6?'rgba(200,245,90,0.7)':p.y<=7?'rgba(255,152,64,0.7)':'rgba(255,82,82,0.7)'),
-      pointRadius:5,borderColor:'transparent'
-    }]},
-    options:{
-      responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:false},
-        tooltip:{backgroundColor:'#222',borderColor:'#333',borderWidth:1,
-          callbacks:{label:c=>`${pts[c.dataIndex].date} · ${c.raw.x}kg · RPE${c.raw.y}`}}},
-      scales:{
-        x:{title:{display:true,text:'Paino (kg)',color:'#666',font:{family:'DM Mono',size:10}},
-          ticks:{color:'#666',font:{family:'DM Mono',size:10}},grid:{color:'#1a1a1a'}},
-        y:{title:{display:true,text:'RPE',color:'#666',font:{family:'DM Mono',size:10}},
-          min:5,max:10,ticks:{stepSize:1,color:'#666',font:{family:'DM Mono',size:10}},grid:{color:'#1a1a1a'}}
-      }
-    }
-  });
 
-  if(pts.length>=6){
-    const h=Math.floor(pts.length/2);
-    const old=pts.slice(0,h),rec=pts.slice(-h);
-    const avgOR=old.reduce((s,p)=>s+p.y,0)/h,avgRR=rec.reduce((s,p)=>s+p.y,0)/h;
-    const avgOK=old.reduce((s,p)=>s+p.x,0)/h,avgRK=rec.reduce((s,p)=>s+p.x,0)/h;
-    let msg='';
-    if(avgRK>avgOK&&avgRR<=avgOR) msg='📈 Paino noussut, RPE laskenut — selkeää kehitystä!';
-    else if(avgRK>avgOK&&avgRR>avgOR) msg='💪 Paino noussut, rasitus kasvanut — sykli etenee.';
-    else if(avgRK<=avgOK&&avgRR<avgOR) msg='✅ Sama paino tuntuu kevyemmältä.';
-    else msg='📊 Ei selkeää trendiä vielä.';
-    document.getElementById('rpe-info').textContent=msg;
-  }
-}
+
+
 
 function renderPeaks(){
   const el=document.getElementById('peaks-panel');
