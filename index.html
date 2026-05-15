@@ -840,6 +840,10 @@ details summary::-webkit-details-marker{display:none;}
   <div class="section-label">All-time ennätykset</div>
   <div id="pr-cards-container" style="margin-bottom:16px;"></div>
 
+  <!-- Reps PRs -->
+  <div class="section-label">Toistomäärä-ennätykset</div>
+  <div class="card" id="reps-pr-panel" style="margin-bottom:12px;"></div>
+
   <!-- PR timeline -->
   <div class="section-label">Ennätyshistoria</div>
   <div class="card" style="margin-bottom:12px;">
@@ -3319,8 +3323,36 @@ function renderVideoList(){
 let prChart = null;
 let selectedPrLift = 'Kyykky';
 
+
+function renderRepsPrs(){
+  const el = document.getElementById('reps-pr-panel');
+  if(!el) return;
+  let html = '';
+  MAIN_LIFTS.forEach(lift=>{
+    const data = getPrData(lift);
+    if(!data||!data.topReps||!data.topReps.length) return;
+    // Best single set reps (most reps in one set)
+    const best = data.topReps[0];
+    html += `<div class="pr-list-item">
+      <div>
+        <div class="pr-list-lift">${lift}</div>
+        <div class="pr-list-date">${best.date} · ${best.sets||''}</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-family:'DM Mono',monospace;font-size:16px;color:var(--blue);">
+          ${best.reps} toistoa
+        </div>
+        <div style="font-size:11px;color:var(--text3);font-family:'DM Mono',monospace;">
+          @ ${best.kg}kg
+        </div>
+      </div>
+    </div>`;
+  });
+  el.innerHTML = html || '<div style="font-size:13px;color:var(--text3);">Ei dataa</div>';
+}
 function initPrView(){
   renderPrCards();
+  renderRepsPrs();
   renderPrLiftTabs();
   renderPrChart(selectedPrLift);
   renderPrSummary();
@@ -3330,9 +3362,7 @@ function initPrView(){
 function getPrData(lift){
   const entries = allData.filter(d=>d.exercise===lift&&d.kg&&d.kg>0);
   if(!entries.length) return null;
-  // Sort by date
   entries.sort((a,b)=>a.date.localeCompare(b.date));
-  // Track running max e1RM
   let maxKg=0, maxE1=0;
   const prHistory = [];
   entries.forEach(e=>{
@@ -3346,7 +3376,22 @@ function getPrData(lift){
       prHistory.push({...e, e1rm: e1, isKgPR, isE1PR});
     }
   });
-  return {entries, prHistory, maxKg, maxE1};
+  // Find best reps PR per weight range
+  // Group by weight, find max reps
+  const repsPRs = {};
+  entries.forEach(e=>{
+    const {r} = parseSetReps(e.sets);
+    if(!r) return;
+    const wKey = e.kg;
+    if(!repsPRs[wKey] || r > repsPRs[wKey].reps){
+      repsPRs[wKey] = {kg:e.kg, reps:r, date:e.date, sets:e.sets};
+    }
+  });
+  // Top 3 reps PRs (most reps regardless of weight)
+  const topReps = Object.values(repsPRs)
+    .sort((a,b)=>b.reps-a.reps || b.kg-a.kg)
+    .slice(0,3);
+  return {entries, prHistory, maxKg, maxE1, topReps};
 }
 
 function renderPrCards(){
